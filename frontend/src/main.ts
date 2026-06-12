@@ -287,6 +287,31 @@ function setupToolbar(): void {
     }
   });
   
+  // Keyboard shortcuts for selection tool
+  window.addEventListener('keydown', (e) => {
+    if (!drawingTools || !layerManager) return;
+    
+    const tool = drawingTools.getCurrentTool();
+    
+    // Delete or Backspace to delete selection
+    if ((e.key === 'Delete' || e.key === 'Backspace') && tool === 'selection') {
+      const ctx = layerManager.getActiveCtx();
+      if (drawingTools.getSelectionBuffer()) {
+        drawingTools.clearSelection(ctx);
+        drawingTools.cancelSelection();
+        
+        // Hide selection options
+        const selectionOptions = document.getElementById('selectionOptions');
+        if (selectionOptions) {
+          selectionOptions.style.display = 'none';
+        }
+        
+        markCanvasChanged();
+        e.preventDefault();
+      }
+    }
+  });
+  
   canvasContainer.addEventListener('click', (e) => {
     if (!layerManager || !drawingTools) return;
     

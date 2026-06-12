@@ -88,7 +88,13 @@ function displayProjects(projects: Project[]): void {
 function createProjectCard(project: Project): HTMLElement {
   const card = document.createElement('div');
   card.className = 'project-card';
-  card.addEventListener('click', () => openModal(project));
+  card.addEventListener('click', (e) => {
+    // Don't open modal if clicking the remix button
+    if ((e.target as HTMLElement).closest('.btn-remix')) {
+      return;
+    }
+    openModal(project);
+  });
   
   const imageUrl = project.thumbnail || project.data;
   const date = new Date(project.created_at).toLocaleDateString('es-ES', {
@@ -107,6 +113,44 @@ function createProjectCard(project: Project): HTMLElement {
       <p class="card-date">${date}</p>
     </div>
   `;
+  
+  // Add Remix button
+  const remixBtn = document.createElement('button');
+  remixBtn.className = 'btn-remix';
+  remixBtn.textContent = '🎨 Remix';
+  remixBtn.onclick = async (e) => {
+    e.stopPropagation(); // Prevent card click
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Debes iniciar sesión para hacer un remix.');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_URL}/remix/${project._id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert(`✅ ${result.mensaje}\nRedirigiendo a tu perfil...`);
+        window.location.href = '/perfil.html';
+      } else {
+        alert(`❌ Error: ${result.mensaje || 'No se pudo clonar el proyecto'}`);
+      }
+    } catch (error) {
+      console.error('Error al hacer remix:', error);
+      alert('❌ Error de conexión. Asegúrate de que el backend esté ejecutándose.');
+    }
+  };
+  
+  card.appendChild(remixBtn);
   
   return card;
 }
