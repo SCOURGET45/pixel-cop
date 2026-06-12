@@ -15,6 +15,7 @@ import passwordRRouter from "./routers/passwordR";
 import publicacionRouter from "./routers/publicacion";
 import reaccionRouter from "./routers/reaccion";
 import paletaColoresRouter from "./routers/Paleta_Colores";
+import pixelCopRouter from "./routers/pixel-cop";
 
 // Load environment variables
 dotenv.config();
@@ -44,6 +45,7 @@ app.use("/api/password-r", passwordRRouter);
 app.use("/api/publicacion", publicacionRouter);
 app.use("/api/reaccion", reaccionRouter);
 app.use("/api/paleta-colores", paletaColoresRouter);
+app.use("/api/pixel-cop", pixelCopRouter);
 
 // Health check
 app.get("/", (req, res) => {
