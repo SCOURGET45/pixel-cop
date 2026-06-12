@@ -517,6 +517,18 @@ body {
   gap: 12px;
 }
 
+.tool-content.compact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+}
+
+.tool-content.compact button {
+  flex: 1 1 auto;
+  min-width: calc(50% - 4px);
+}
+
 .tool-content label {
   font-size: 12px;
   color: var(--text-muted);
@@ -539,6 +551,20 @@ body {
   font-size: 13px;
   font-weight: 500;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tool-content button.btn-small {
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.tool-content button svg {
+  width: 16px;
+  height: 16px;
 }
 
 .tool-content button:hover {
