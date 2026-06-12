@@ -1,6 +1,14 @@
 // Drawing tools for canvas-based painting
 
-export type ToolType = 'brush' | 'eraser' | 'fill' | 'picker';
+export type ToolType = 'brush' | 'eraser' | 'fill' | 'picker' | 'selection';
+
+export interface SelectionBuffer {
+  imageData: ImageData;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 export class DrawingTools {
   private currentTool: ToolType = 'brush';
@@ -9,6 +17,12 @@ export class DrawingTools {
   private isDrawing: boolean = false;
   private lastX: number = 0;
   private lastY: number = 0;
+  
+  // Selection tool properties
+  private selectionBuffer: SelectionBuffer | null = null;
+  private isSelecting: boolean = false;
+  private startCoords: {x: number, y: number} = {x: 0, y: 0};
+  private selectionRect: {x1: number, y1: number, x2: number, y2: number} | null = null;
 
   setTool(tool: ToolType): void {
     this.currentTool = tool;
@@ -32,6 +46,116 @@ export class DrawingTools {
 
   getBrushSize(): number {
     return this.brushSize;
+  }
+
+  // Selection tool methods
+  startSelection(x: number, y: number): void {
+    if (this.currentTool !== 'selection') return;
+    this.isSelecting = true;
+    this.startCoords = {x, y};
+    this.selectionRect = {x1: x, y1: y, x2: x, y2: y};
+  }
+  
+  updateSelection(x: number, y: number): {x1: number, y1: number, x2: number, y2: number} | null {
+    if (!this.isSelecting || this.currentTool !== 'selection') return null;
+    this.selectionRect = {
+      x1: this.startCoords.x,
+      y1: this.startCoords.y,
+      x2: x,
+      y2: y
+    };
+    return this.selectionRect;
+  }
+  
+  endSelection(ctx: CanvasRenderingContext2D): SelectionBuffer | null {
+    if (!this.isSelecting || !this.selectionRect) return null;
+    
+    const {x1, y1, x2, y2} = this.selectionRect;
+    const startX = Math.min(x1, x2);
+    const startY = Math.min(y1, y2);
+    const width = Math.abs(x2 - x1);
+    const height = Math.abs(y2 - y1);
+    
+    if (width <= 0 || height <= 0) {
+      this.isSelecting = false;
+      this.selectionRect = null;
+      return null;
+    }
+    
+    // Capture the pixels in the selection area
+    this.selectionBuffer = {
+      imageData: ctx.getImageData(startX, startY, width, height),
+      x: startX,
+      y: startY,
+      width: width,
+      height: height
+    };
+    
+    this.isSelecting = false;
+    this.selectionRect = null;
+    console.log('Área copiada al buffer');
+    return this.selectionBuffer;
+  }
+  
+  getSelectionBuffer(): SelectionBuffer | null {
+    return this.selectionBuffer;
+  }
+  
+  clearSelection(ctx: CanvasRenderingContext2D): boolean {
+    if (!this.selectionBuffer) return false;
+    ctx.clearRect(
+      this.selectionBuffer.x,
+      this.selectionBuffer.y,
+      this.selectionBuffer.width,
+      this.selectionBuffer.height
+    );
+    return true;
+  }
+  
+  moveSelection(ctx: CanvasRenderingContext2D, deltaX: number, deltaY: number): boolean {
+    if (!this.selectionBuffer) return false;
+    
+    // Clear the old area
+    ctx.clearRect(
+      this.selectionBuffer.x,
+      this.selectionBuffer.y,
+      this.selectionBuffer.width,
+      this.selectionBuffer.height
+    );
+    
+    // Update position
+    this.selectionBuffer.x += deltaX;
+    this.selectionBuffer.y += deltaY;
+    
+    // Draw the selection at new position
+    ctx.putImageData(
+      this.selectionBuffer.imageData,
+      this.selectionBuffer.x,
+      this.selectionBuffer.y
+    );
+    
+    return true;
+  }
+  
+  pasteSelection(ctx: CanvasRenderingContext2D, x: number, y: number): boolean {
+    if (!this.selectionBuffer) return false;
+    
+    ctx.putImageData(this.selectionBuffer.imageData, x, y);
+    return true;
+  }
+  
+  cancelSelection(): void {
+    this.selectionBuffer = null;
+    this.isSelecting = false;
+    this.selectionRect = null;
+  }
+  
+  isCurrentlySelecting(): boolean {
+    return this.isSelecting;
+  }
+  
+  getSelectionRect(): {x1: number, y1: number, x2: number, y2: number} | null {
+    return this.selectionRect;
   }
 
   startDrawing(x: number, y: number, ctx: CanvasRenderingContext2D): void {

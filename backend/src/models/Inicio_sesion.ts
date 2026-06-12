@@ -35,6 +35,12 @@ const InicioSesionSchema = new mongoose.Schema({
     type: String,
     trim: true,
     maxlength: 30
+  },
+  
+  role: {
+    type: String,
+    enum: ['user', 'mod', 'admin'],
+    default: 'user'
   }
 
 },
