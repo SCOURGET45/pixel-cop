@@ -324,10 +324,84 @@ function setupMenuActions(): void {
     input.value = '';
   });
   
-  // Save (placeholder for future backend integration)
-  document.getElementById('btnSave')!.addEventListener('click', () => {
-    alert('Función de guardar disponible próximamente. Usa "Exportar" para descargar tu trabajo.');
+  // Save (Save to cloud)
+  document.getElementById('btnSave')!.addEventListener('click', async () => {
+    if (!layerManager) return;
+    
+    const user = authService.getCurrentUser();
+    if (!user) {
+      alert('Debes iniciar sesión para guardar proyectos.');
+      return;
+    }
+    
+    // Get user ID (handle different possible property names)
+    const userId = user._id || user.id;
+    if (!userId) {
+      alert('No se pudo identificar el usuario. Por favor inicia sesión nuevamente.');
+      return;
+    }
+    
+    const projectName = prompt('Nombre del proyecto:', `Mi Arte ${new Date().toLocaleDateString()}`);
+    if (!projectName) return;
+    
+    try {
+      // Get composite canvas with all layers
+      const compositeCanvas = layerManager.getCompositeCanvas();
+      
+      // Create full image data (Base64)
+      const imageData = compositeCanvas.toDataURL('image/png');
+      
+      // Create thumbnail (smaller version)
+      const thumbnailCanvas = document.createElement('canvas');
+      const thumbWidth = 300;
+      const thumbHeight = Math.round((compositeCanvas.height / compositeCanvas.width) * thumbWidth);
+      thumbnailCanvas.width = thumbWidth;
+      thumbnailCanvas.height = thumbHeight;
+      const thumbCtx = thumbnailCanvas.getContext('2d');
+      if (thumbCtx) {
+        thumbCtx.drawImage(compositeCanvas, 0, 0, thumbWidth, thumbHeight);
+      }
+      const thumbnailData = thumbnailCanvas.toDataURL('image/jpeg', 0.8);
+      
+      // Ask if public
+      const isPublic = confirm('¿Quieres compartir este proyecto públicamente en la galería de la comunidad?');
+      
+      // Send to backend
+      const response = await fetch('http://localhost:3000/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          name: projectName,
+          data: imageData,
+          thumbnail: thumbnailData,
+          is_public: isPublic
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert(`✅ ${result.mensaje}\n${isPublic ? '¡Tu proyecto ahora es visible en la galería de la comunidad!' : 'Proyecto guardado privadamente.'}`);
+      } else {
+        alert(`❌ Error: ${result.mensaje || 'Error al guardar el proyecto'}`);
+      }
+      
+    } catch (error) {
+      console.error('Error saving project:', error);
+      alert('❌ Error de conexión. Asegúrate de que el backend esté ejecutándose en http://localhost:3000');
+    }
   });
+  
+  // Add link to community gallery
+  const menuGroup = document.querySelector('.menu-group')!;
+  const comunidadLink = document.createElement('a');
+  comunidadLink.href = '/comunidad.html';
+  comunidadLink.textContent = '🌐 Ver Comunidad';
+  comunidadLink.style.cssText = 'margin-left: 10px; padding: 5px 10px; background: #667eea; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;';
+  menuGroup.appendChild(comunidadLink);
   
   // Export
   document.getElementById('btnExport')!.addEventListener('click', () => {

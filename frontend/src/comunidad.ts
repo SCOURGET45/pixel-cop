@@ -1,0 +1,169 @@
+// Comunidad Gallery - Load and display public projects
+
+interface Project {
+  _id: string;
+  user_id: {
+    Usuario: string;
+    Nombre: string;
+  };
+  name: string;
+  data: string; // Base64 image
+  thumbnail?: string;
+  is_public: boolean;
+  created_at: string;
+}
+
+const API_URL = 'http://localhost:3000/api/projects';
+
+// DOM Elements
+const loadingEl = document.getElementById('loading')!;
+const projectsGridEl = document.getElementById('projects-grid')!;
+const noProjectsEl = document.getElementById('no-projects')!;
+const errorEl = document.getElementById('error-message')!;
+const errorTextEl = document.getElementById('error-text')!;
+const modalEl = document.getElementById('project-modal')!;
+const modalTitleEl = document.getElementById('modal-title')!;
+const modalAuthorEl = document.getElementById('modal-author')!;
+const modalImageEl = document.getElementById('modal-image') as HTMLImageElement;
+const btnDownloadEl = document.getElementById('btn-download')!;
+
+let currentProjectData: string | null = null;
+
+// Load projects from API
+export async function loadProjects(): Promise<void> {
+  showLoading();
+  
+  try {
+    const response = await fetch(API_URL);
+    
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+    
+    const projects: Project[] = await response.json();
+    displayProjects(projects);
+    
+  } catch (error) {
+    console.error('Error loading projects:', error);
+    showError(error instanceof Error ? error.message : 'Error desconocido');
+  }
+}
+
+// Show loading state
+function showLoading(): void {
+  loadingEl.classList.remove('hidden');
+  projectsGridEl.classList.add('hidden');
+  noProjectsEl.classList.add('hidden');
+  errorEl.classList.add('hidden');
+}
+
+// Show error state
+function showError(message: string): void {
+  loadingEl.classList.add('hidden');
+  projectsGridEl.classList.add('hidden');
+  noProjectsEl.classList.add('hidden');
+  errorEl.classList.remove('hidden');
+  errorTextEl.textContent = message;
+}
+
+// Display projects in grid
+function displayProjects(projects: Project[]): void {
+  loadingEl.classList.add('hidden');
+  
+  if (projects.length === 0) {
+    noProjectsEl.classList.remove('hidden');
+    return;
+  }
+  
+  projectsGridEl.classList.remove('hidden');
+  projectsGridEl.innerHTML = '';
+  
+  projects.forEach(project => {
+    const card = createProjectCard(project);
+    projectsGridEl.appendChild(card);
+  });
+}
+
+// Create project card element
+function createProjectCard(project: Project): HTMLElement {
+  const card = document.createElement('div');
+  card.className = 'project-card';
+  card.addEventListener('click', () => openModal(project));
+  
+  const imageUrl = project.thumbnail || project.data;
+  const date = new Date(project.created_at).toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  
+  const authorName = project.user_id?.Usuario || project.user_id?.Nombre || 'Anónimo';
+  
+  card.innerHTML = `
+    <img class="card-image" src="${imageUrl}" alt="${project.name}" />
+    <div class="card-content">
+      <h3 class="card-title">${escapeHtml(project.name)}</h3>
+      <p class="card-author">Por: ${escapeHtml(authorName)}</p>
+      <p class="card-date">${date}</p>
+    </div>
+  `;
+  
+  return card;
+}
+
+// Open modal with project details
+function openModal(project: Project): void {
+  currentProjectData = project.data;
+  modalTitleEl.textContent = project.name;
+  
+  const authorName = project.user_id?.Usuario || project.user_id?.Nombre || 'Anónimo';
+  modalAuthorEl.textContent = authorName;
+  modalImageEl.src = project.data;
+  
+  modalEl.classList.remove('hidden');
+  
+  // Setup download button
+  btnDownloadEl.onclick = () => downloadProject(project.name, project.data);
+}
+
+// Close modal
+export function closeModal(): void {
+  modalEl.classList.add('hidden');
+  currentProjectData = null;
+}
+
+// Download project image
+function downloadProject(name: string, imageData: string): void {
+  const link = document.createElement('a');
+  link.download = `${name.replace(/[^a-z0-9]/gi, '_')}.png`;
+  link.href = imageData;
+  link.click();
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Close modal when clicking outside
+modalEl.addEventListener('click', (e) => {
+  if (e.target === modalEl) {
+    closeModal();
+  }
+});
+
+// Close modal with ESC key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !modalEl.classList.contains('hidden')) {
+    closeModal();
+  }
+});
+
+// Make functions available globally for HTML onclick handlers
+(window as any).loadProjects = loadProjects;
+(window as any).closeModal = closeModal;
+
+// Load projects on page load
+loadProjects();
