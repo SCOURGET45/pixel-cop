@@ -58,7 +58,7 @@ function setupNavigation(): void {
         setTimeout(() => {
           if (!authService.isLoggedIn()) {
             alert('Para usar el editor, primero debes iniciar sesión.');
-            showView('auth');
+            window.app.showView('auth');
           } else {
             initializeApp();
           }
@@ -67,7 +67,9 @@ function setupNavigation(): void {
       
       // Load community gallery if entering community view
       if (viewName === 'community') {
-        loadCommunityGallery();
+        import('./comunidad').then(module => {
+          module.loadProjects();
+        });
       }
     }
   };
@@ -340,6 +342,8 @@ function setupToolbar(): void {
     const y = e.clientY - rect.top;
     const ctx = layerManager.getActiveCtx();
     
+    if (!ctx) return;
+    
     const tool = drawingTools.getCurrentTool();
     
     if (tool === 'selection') {
@@ -356,6 +360,8 @@ function setupToolbar(): void {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     const ctx = layerManager.getActiveCtx();
+    
+    if (!ctx) return;
     
     const tool = drawingTools.getCurrentTool();
     
@@ -384,6 +390,8 @@ function setupToolbar(): void {
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       const ctx = layerManager!.getActiveCtx();
+      
+      if (!ctx) return;
       
       const buffer = drawingTools.endSelection(ctx);
       if (buffer) {
@@ -414,6 +422,8 @@ function setupToolbar(): void {
     // Delete or Backspace to delete selection
     if ((e.key === 'Delete' || e.key === 'Backspace') && tool === 'selection') {
       const ctx = layerManager.getActiveCtx();
+      if (!ctx) return;
+      
       if (drawingTools.getSelectionBuffer()) {
         drawingTools.clearSelection(ctx);
         drawingTools.cancelSelection();
@@ -441,6 +451,8 @@ function setupToolbar(): void {
       const y = e.clientY - rect.top;
       const ctx = layerManager.getActiveCtx();
       
+      if (!ctx) return;
+      
       const pickedColor = drawingTools.pickColor(x, y, ctx);
       if (pickedColor) {
         drawingTools.setColor(pickedColor);
@@ -452,6 +464,8 @@ function setupToolbar(): void {
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       const ctx = layerManager.getActiveCtx();
+      
+      if (!ctx) return;
       
       drawingTools.startDrawing(x, y, ctx);
     }
@@ -593,6 +607,8 @@ function setupMenuActions(): void {
       if (!layerManager || !drawingTools) return;
       
       const ctx = layerManager.getActiveCtx();
+      if (!ctx) return;
+      
       drawingTools.clearSelection(ctx);
       drawingTools.cancelSelection();
       
