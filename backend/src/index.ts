@@ -31,9 +31,18 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
-// Aumentamos el límite para permitir imágenes base64 grandes (hasta 50MB)
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Aumentamos el límite para permitir imágenes base64 grandes (hasta 100MB)
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+
+// Manejo de errores global para asegurar respuestas JSON
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error global:', err);
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'La imagen es demasiado grande. Intenta reducir el tamaño del lienzo.' });
+  }
+  res.status(500).json({ error: 'Error interno del servidor' });
+});
 
 // Database connection
 mongoose.connect(MONGODB_URI)
