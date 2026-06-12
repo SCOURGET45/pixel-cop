@@ -198,14 +198,13 @@ body {
 
 /* ==================== TOOLBAR ==================== */
 .toolbar {
-  width: var(--toolbar-width);
+  width: 280px;
   background: var(--surface);
   border-right: 1px solid var(--border);
-  padding: 12px 8px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
+  gap: 16px;
   overflow-y: auto;
   max-height: calc(100vh - var(--menu-height));
   scrollbar-width: thin;
@@ -213,26 +212,27 @@ body {
 }
 
 .toolbar::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .toolbar::-webkit-scrollbar-track {
   background: var(--bg);
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .toolbar::-webkit-scrollbar-thumb {
   background: var(--primary);
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .toolbar h3 {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 6px;
-  text-align: center;
+  margin-bottom: 8px;
+  text-align: left;
+  font-weight: 600;
 }
 
 /* Tool Section */
@@ -240,15 +240,14 @@ body {
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .tools-grid, .actions-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
   width: 100%;
 }
 
@@ -269,12 +268,12 @@ body {
 }
 
 .tool-btn {
-  width: 42px;
-  height: 42px;
+  width: 52px;
+  height: 52px;
   border: 2px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface);
-  font-size: 20px;
+  font-size: 24px;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -285,11 +284,15 @@ body {
 .tool-btn:hover {
   border-color: var(--primary);
   background: var(--bg);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.2);
 }
 
 .tool-btn.active {
   border-color: var(--primary);
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
 }
 
 .tool-options {
@@ -323,44 +326,59 @@ body {
 
 .tool-options button {
   width: 100%;
-  padding: 8px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   transition: all 0.2s;
 }
 
 .tool-options button:hover {
-  background: var(--bg);
+  background: var(--primary);
+  color: white;
   border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
 }
 
 /* Tool Details (Collapsible sections) */
 .tool-details {
   width: 100%;
   margin-top: 4px;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
+  background: var(--bg);
 }
 
 .tool-summary {
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text);
-  padding: 10px 8px;
-  background: var(--bg);
-  border-radius: 6px;
+  padding: 12px 14px;
+  background: transparent;
+  border-radius: 8px;
   transition: all 0.2s;
   list-style: none;
-  text-align: center;
+  text-align: left;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tool-summary::after {
+  content: '▼';
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+.tool-details[open] .tool-summary::after {
+  transform: rotate(180deg);
 }
 
 .tool-summary::-webkit-details-marker {
@@ -368,27 +386,31 @@ body {
 }
 
 .tool-summary:hover {
-  background: var(--primary);
-  color: white;
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary);
 }
 
 .tool-details[open] .tool-summary {
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
   color: white;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
 
+.tool-details[open] .tool-summary:hover {
+  opacity: 0.9;
+}
+
 .tool-content {
-  padding: 10px;
+  padding: 14px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-top: none;
-  border-bottom-left-radius: 6px;
-  border-bottom-right-radius: 6px;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .tool-content label {
@@ -404,19 +426,23 @@ body {
 
 .tool-content button {
   width: 100%;
-  padding: 8px;
+  padding: 10px 14px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   transition: all 0.2s;
 }
 
 .tool-content button:hover {
-  background: var(--bg);
+  background: var(--primary);
+  color: white;
   border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
 }
 
 .color-picker-section {
@@ -442,31 +468,38 @@ body {
 }
 
 .tool-content #colorPicker {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   border: 2px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   padding: 0;
+  transition: transform 0.2s;
+}
+
+.tool-content #colorPicker:hover {
+  transform: scale(1.05);
+  border-color: var(--primary);
 }
 
 .tool-content .color-presets {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  gap: 6px;
 }
 
 .tool-content .preset-color {
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
   cursor: pointer;
   border: 1px solid var(--border);
   transition: transform 0.2s;
 }
 
 .tool-content .preset-color:hover {
-  transform: scale(1.2);
+  transform: scale(1.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* ==================== CANVAS AREA ==================== */
@@ -477,13 +510,24 @@ body {
   align-items: center;
   justify-content: center;
   overflow: auto;
-  padding: 20px;
+  padding: 40px;
+}
+
+body.dark-theme .canvas-area {
+  background: #0f172a;
 }
 
 .canvas-container {
   position: relative;
   background: white;
-  box-shadow: var(--shadow);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  transition: transform 0.2s ease-out;
+}
+
+body.dark-theme .canvas-container {
+  background: #1e293b;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .canvas-container canvas {
@@ -517,18 +561,22 @@ body {
 
 .layers-controls button {
   flex: 1;
-  padding: 8px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--surface);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   transition: all 0.2s;
 }
 
 .layers-controls button:hover {
-  background: var(--bg);
+  background: var(--primary);
+  color: white;
   border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
 }
 
 .layers-list {
@@ -542,21 +590,24 @@ body {
 .layer-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
+  gap: 10px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .layer-item:hover {
   background: var(--bg);
+  transform: translateX(4px);
+  border-color: var(--primary);
 }
 
 .layer-item.active {
   border-color: var(--primary);
-  background: rgba(99, 102, 241, 0.1);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.1));
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
 }
 
 .layer-visibility {

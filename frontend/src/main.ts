@@ -836,7 +836,22 @@ function setupMenuActions(): void {
       
     } catch (error) {
       console.error('Error saving project:', error);
-      alert('❌ Error de conexión. Asegúrate de que el backend esté ejecutándose en http://localhost:3000');
+      
+      let errorMessage = '❌ Error al guardar el proyecto.\n\n';
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        errorMessage += 'No se pudo conectar con el servidor. Asegúrate de que:\n\n' +
+                       '1. El backend esté ejecutándose (npm run dev en backend/src)\n' +
+                       '2. MongoDB esté conectado\n' +
+                       '3. El servidor esté disponible en http://localhost:3000\n\n' +
+                       'Revisa la consola (F12) para más detalles.';
+      } else if (error instanceof Error) {
+        errorMessage += `Error: ${error.message}`;
+      } else {
+        errorMessage += 'Error desconocido. Revisa la consola (F12).';
+      }
+      
+      alert(errorMessage);
     }
   });
   
