@@ -2,6 +2,7 @@
 
 export interface User {
   _id?: string;
+  id?: string;
   Nombre: string;
   Usuario: string;
   correo: string;
@@ -28,7 +29,7 @@ class AuthService {
 
   async login(usuario: string, password: string): Promise<AuthResult> {
     try {
-      const response = await fetch(`${this.API_URL}/login`, {
+      const response = await fetch(`${this.API_URL}/inicio-sesion/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,7 +64,7 @@ class AuthService {
 
   async register(userData: Omit<User, '_id'>): Promise<AuthResult> {
     try {
-      const response = await fetch(`${this.API_URL}/usuarios`, {
+      const response = await fetch(`${this.API_URL}/inicio-sesion/registro`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

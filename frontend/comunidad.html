@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Comunidad - PixelArt Studio</title>
+    <link rel="stylesheet" href="/src/comunidad.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="comunidad-header">
+      <div class="header-content">
+        <h1>🎨 Galería de la Comunidad</h1>
+        <p>Explora las creaciones de otros artistas</p>
+        <a href="/" class="btn-home">← Volver al Editor</a>
+      </div>
+    </header>
+
+    <!-- Loading State -->
+    <div id="loading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Cargando proyectos...</p>
+    </div>
+
+    <!-- Projects Grid -->
+    <main class="projects-container">
+      <div id="projects-grid" class="projects-grid">
+        <!-- Project cards will be inserted here -->
+      </div>
+    </main>
+
+    <!-- No Projects Message -->
+    <div id="no-projects" class="no-projects hidden">
+      <h2>😢 No hay proyectos públicos aún</h2>
+      <p>Sé el primero en compartir tu arte con la comunidad!</p>
+    </div>
+
+    <!-- Error Message -->
+    <div id="error-message" class="error-message hidden">
+      <h2>❌ Error al cargar proyectos</h2>
+      <p id="error-text"></p>
+      <button onclick="loadProjects()">Intentar de nuevo</button>
+    </div>
+
+    <!-- Modal for viewing project -->
+    <div id="project-modal" class="modal hidden">
+      <div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <h2 id="modal-title"></h2>
+        <p class="modal-author">Por: <span id="modal-author"></span></p>
+        <img id="modal-image" src="" alt="Proyecto" />
+        <div class="modal-actions">
+          <button id="btn-download" class="btn-download">Descargar</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/comunidad.ts"></script>
+  </body>
+</html>
