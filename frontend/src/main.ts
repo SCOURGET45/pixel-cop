@@ -21,6 +21,16 @@ let autoSaveTimer: number | null = null;
 let currentProjectId: string | null = null;
 let originalImageData: string | null = null; // Para Pixel-Cop
 
+// Undo/Redo state
+let undoStack: ImageData[] = [];
+let redoStack: ImageData[] = [];
+const MAX_HISTORY_SIZE = 50;
+
+// Zoom state
+let currentZoom: number = 1; // 1 = 100%
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 5;
+
 // Global app object for navigation
 declare global {
   interface Window {
@@ -292,6 +302,106 @@ function markCanvasChanged(): void {
   hayCambiosSinGuardar = true;
 }
 
+// Save current state to undo stack
+function saveState(): void {
+  if (!layerManager) return;
+  
+  const activeCtx = layerManager.getActiveCtx();
+  if (!activeCtx) return;
+  
+  const canvas = activeCtx.canvas;
+  const imageData = activeCtx.getImageData(0, 0, canvas.width, canvas.height);
+  
+  // Push to undo stack
+  undoStack.push(imageData);
+  
+  // Limit stack size
+  if (undoStack.length > MAX_HISTORY_SIZE) {
+    undoStack.shift();
+  }
+  
+  // Clear redo stack when new action is performed
+  redoStack = [];
+}
+
+// Undo last action
+function undo(): void {
+  if (!layerManager || undoStack.length === 0) return;
+  
+  const activeCtx = layerManager.getActiveCtx();
+  if (!activeCtx) return;
+  
+  const canvas = activeCtx.canvas;
+  
+  // Save current state to redo stack
+  const currentState = activeCtx.getImageData(0, 0, canvas.width, canvas.height);
+  redoStack.push(currentState);
+  
+  // Pop from undo stack and restore
+  const previousState = undoStack.pop()!;
+  activeCtx.putImageData(previousState, 0, 0);
+  
+  updateZoomDisplay();
+}
+
+// Redo last undone action
+function redo(): void {
+  if (!layerManager || redoStack.length === 0) return;
+  
+  const activeCtx = layerManager.getActiveCtx();
+  if (!activeCtx) return;
+  
+  const canvas = activeCtx.canvas;
+  
+  // Save current state to undo stack
+  const currentState = activeCtx.getImageData(0, 0, canvas.width, canvas.height);
+  undoStack.push(currentState);
+  
+  // Pop from redo stack and restore
+  const nextState = redoStack.pop()!;
+  activeCtx.putImageData(nextState, 0, 0);
+  
+  updateZoomDisplay();
+}
+
+// Apply zoom to canvas container
+function applyZoom(): void {
+  const canvasContainer = document.getElementById('canvas-container');
+  if (!canvasContainer) return;
+  
+  canvasContainer.style.transform = `scale(${currentZoom})`;
+  canvasContainer.style.transformOrigin = 'top left';
+  
+  // Update zoom display
+  updateZoomDisplay();
+}
+
+// Update zoom display value
+function updateZoomDisplay(): void {
+  const zoomValue = document.getElementById('zoomValue');
+  if (zoomValue) {
+    zoomValue.textContent = `${Math.round(currentZoom * 100)}%`;
+  }
+}
+
+// Zoom in
+function zoomIn(): void {
+  currentZoom = Math.min(currentZoom + 0.1, MAX_ZOOM);
+  applyZoom();
+}
+
+// Zoom out
+function zoomOut(): void {
+  currentZoom = Math.max(currentZoom - 0.1, MIN_ZOOM);
+  applyZoom();
+}
+
+// Reset zoom
+function resetZoom(): void {
+  currentZoom = 1;
+  applyZoom();
+}
+
 // Create canvas with specified dimensions
 function createCanvas(width: number, height: number): void {
   if (!layerManager) return;
@@ -306,6 +416,13 @@ function createCanvas(width: number, height: number): void {
   container.style.width = `${width}px`;
   container.style.height = `${height}px`;
   
+  // Reset zoom when creating new canvas
+  resetZoom();
+  
+  // Clear undo/redo stacks
+  undoStack = [];
+  redoStack = [];
+  
   // Create first layer
   const layer = layerManager.createLayer('Fondo');
   layer.canvas.width = width;
@@ -314,6 +431,9 @@ function createCanvas(width: number, height: number): void {
   // Fill with white background
   layer.ctx.fillStyle = '#ffffff';
   layer.ctx.fillRect(0, 0, width, height);
+  
+  // Save initial state
+  saveState();
 }
 
 // Setup toolbar event listeners
@@ -430,9 +550,11 @@ function setupToolbar(): void {
           selectionOptions.style.display = 'block';
         }
         markCanvasChanged();
+        saveState(); // Save state after selection
       }
     } else {
       drawingTools.stopDrawing();
+      saveState(); // Save state after drawing stroke ends
     }
   });
   
@@ -442,11 +564,25 @@ function setupToolbar(): void {
     }
   });
   
-  // Keyboard shortcuts for selection tool
+  // Keyboard shortcuts for selection tool and undo/redo
   window.addEventListener('keydown', (e) => {
     if (!drawingTools || !layerManager) return;
     
     const tool = drawingTools.getCurrentTool();
+    
+    // Ctrl+Z for Undo
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      undo();
+      return;
+    }
+    
+    // Ctrl+Y or Ctrl+Shift+Z for Redo
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+      e.preventDefault();
+      redo();
+      return;
+    }
     
     // Delete or Backspace to delete selection
     if ((e.key === 'Delete' || e.key === 'Backspace') && tool === 'selection') {
@@ -464,6 +600,7 @@ function setupToolbar(): void {
         }
         
         markCanvasChanged();
+        saveState(); // Save state after deleting selection
         e.preventDefault();
       }
     }
@@ -648,6 +785,7 @@ function setupMenuActions(): void {
       }
       
       markCanvasChanged();
+      saveState(); // Save state after deleting selection
     });
   }
   
@@ -663,6 +801,43 @@ function setupMenuActions(): void {
       if (selectionOptions) {
         selectionOptions.style.display = 'none';
       }
+    });
+  }
+  
+  // Undo/Redo buttons
+  const btnUndo = document.getElementById('btnUndo');
+  if (btnUndo) {
+    btnUndo.addEventListener('click', () => {
+      undo();
+    });
+  }
+  
+  const btnRedo = document.getElementById('btnRedo');
+  if (btnRedo) {
+    btnRedo.addEventListener('click', () => {
+      redo();
+    });
+  }
+  
+  // Zoom controls
+  const btnZoomIn = document.getElementById('btnZoomIn');
+  if (btnZoomIn) {
+    btnZoomIn.addEventListener('click', () => {
+      zoomIn();
+    });
+  }
+  
+  const btnZoomOut = document.getElementById('btnZoomOut');
+  if (btnZoomOut) {
+    btnZoomOut.addEventListener('click', () => {
+      zoomOut();
+    });
+  }
+  
+  const btnZoomReset = document.getElementById('btnZoomReset');
+  if (btnZoomReset) {
+    btnZoomReset.addEventListener('click', () => {
+      resetZoom();
     });
   }
   
