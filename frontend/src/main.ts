@@ -219,13 +219,25 @@ function updateNavForAuth(): void {
 function initializeApp(): void {
   isAppInitialized = true;
   
+  // Get DOM elements and verify they exist
+  const canvasContainer = document.getElementById('canvas-container');
+  const layersList = document.getElementById('layers-list');
+  
+  if (!canvasContainer) {
+    console.error("Error: No se encontró el contenedor del canvas (#canvas-container)");
+    return;
+  }
+  
+  if (!layersList) {
+    console.error("Error: No se encontró la lista de capas (#layers-list)");
+    return;
+  }
+  
   // Initialize tools
   drawingTools = new DrawingTools();
   
   // Initialize layer manager
-  const canvasWrapper = document.getElementById('canvasWrapper')!;
-  const layersList = document.getElementById('layersList')!;
-  layerManager = new LayerManager(canvasWrapper, layersList);
+  layerManager = new LayerManager(canvasContainer, layersList);
   
   // Create initial canvas and layer
   createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
