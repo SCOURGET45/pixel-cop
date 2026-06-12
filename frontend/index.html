@@ -5,14 +5,71 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Error404 Studio</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
       .menu-group a { text-decoration: none; color: inherit; margin-left: 10px; }
       .menu-group a:hover { text-decoration: underline; }
     </style>
   </head>
-  <body>
+  <body class="dark-theme">
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+      <div class="splash-content">
+        <h1 class="logo-text">ERROR404 <span class="accent">STUDIO</span></h1>
+        <div class="loader"></div>
+        <p class="splash-sub">Cargando entorno de trabajo...</p>
+      </div>
+    </div>
+
+    <!-- Modal de Importación de Imagen -->
+    <div id="import-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2><i class="ph ph-image"></i> Importar Imagen</h2>
+        <p>¿Cómo deseas ajustar la imagen al lienzo?</p>
+        <div class="modal-options">
+          <button id="btn-fit-canvas" class="modal-option-btn">
+            <i class="ph ph-arrows-in-line-horizontal"></i>
+            <span>Ajustar al lienzo</span>
+          </button>
+          <button id="btn-original-size" class="modal-option-btn">
+            <i class="ph ph-scan"></i>
+            <span>Tamaño original</span>
+          </button>
+          <button id="btn-center" class="modal-option-btn">
+            <i class="ph ph-corners-in"></i>
+            <span>Centrar</span>
+          </button>
+        </div>
+        <button class="btn-cancel" onclick="closeModal('import-modal')">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Modal de Redimensionar Lienzo -->
+    <div id="resize-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2><i class="ph ph-crop"></i> Redimensionar Lienzo</h2>
+        <div class="form-group">
+          <label>Ancho (px)</label>
+          <input type="number" id="resize-width" value="800">
+        </div>
+        <div class="form-group">
+          <label>Alto (px)</label>
+          <input type="number" id="resize-height" value="600">
+        </div>
+        <div class="form-group">
+          <label>Anclaje</label>
+          <div class="anchor-grid" id="anchor-grid"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeModal('resize-modal')">Cancelar</button>
+          <button id="btn-apply-resize" class="btn-primary">Aplicar</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Login/Register Container -->
-    <div id="auth-container" class="auth-container">
+    <div id="auth-container" class="auth-container hidden">
       <div id="login-form" class="auth-form">
         <h2>Iniciar Sesión</h2>
         <form id="loginForm">
@@ -28,397 +85,137 @@
         <form id="registerForm">
           <div class="form-group">
             <label for="regNombre">Nombre completo:</label>
-            <input type="text" id="regNombre" placeholder="Ej: Juan Pérez" required title="Tu nombre completo" />
+            <input type="text" id="regNombre" placeholder="Ej: Juan Pérez" required />
           </div>
-          
           <div class="form-group">
             <label for="regUsuario">Nombre de usuario:</label>
-            <input type="text" id="regUsuario" placeholder="Ej: artista_pixel" required title="Nombre único para tu cuenta (sin espacios)" pattern="[a-zA-Z0-9_]+" />
+            <input type="text" id="regUsuario" placeholder="Ej: artista_pixel" required pattern="[a-zA-Z0-9_]+" />
             <small>Solo letras, números y guiones bajos</small>
           </div>
-          
           <div class="form-group">
             <label for="regCorreo">Correo electrónico:</label>
-            <input type="email" id="regCorreo" placeholder="Ej: juan@ejemplo.com" required title="Tu correo electrónico válido" />
+            <input type="email" id="regCorreo" placeholder="Ej: juan@ejemplo.com" required />
           </div>
-          
           <div class="form-group">
             <label for="regPassword">Contraseña:</label>
-            <input type="password" id="regPassword" placeholder="Ej: MiClave123!" required title="Contraseña segura (mínimo 6 caracteres)" minlength="6" />
+            <input type="password" id="regPassword" placeholder="Ej: MiClave123!" required minlength="6" />
             <small>Mínimo 6 caracteres</small>
           </div>
-          
           <div id="registerError" class="error-message hidden"></div>
           <div id="registerSuccess" class="success-message hidden"></div>
-          
           <button type="submit" id="btnRegisterSubmit">Registrarse</button>
         </form>
         <p>¿Ya tienes cuenta? <a href="#" id="showLogin">Inicia sesión</a></p>
       </div>
     </div>
 
-    <!-- Main App Container (hidden until logged in) -->
+    <!-- Main App Container -->
     <div id="app-container" class="app-container hidden">
-      <!-- Splash Screen -->
-      <div id="splash-screen" class="splash-screen">
-        <div class="splash-content">
-          <h1 class="splash-logo">ERROR404<span class="highlight">STUDIO</span></h1>
-          <p class="splash-tagline">Pixel Art Professional</p>
-          <div class="splash-loader"></div>
+      <!-- Barra Superior: Propiedades Contextuales -->
+      <div id="context-bar">
+        <div class="context-item" id="ctx-brush-settings">
+          <span class="label">Tamaño:</span>
+          <input type="range" id="brush-size-slider" min="1" max="100" value="10">
+          <span id="brush-size-value">10px</span>
+        </div>
+        <div class="context-item" id="ctx-tool-info">
+          <span class="info-text">Selecciona una herramienta</span>
         </div>
       </div>
-
-      <!-- Top Menu Bar -->
-      <header class="menu-bar">
-        <div class="menu-group">
-          <button id="btnNew">Nuevo</button>
-          <button id="btnOpen">Abrir</button>
-          <button id="btnSave">Guardar</button>
-          <button id="btnExport">Exportar</button>
-          <select id="exportFormat">
-            <option value="png">PNG</option>
-            <option value="jpg">JPG</option>
-            <option value="gif">GIF</option>
-          </select>
-          <button id="btnVerifyIntegrity" title="Verificar integridad de píxeles">🛡️ Verificar</button>
-        </div>
-        <div class="menu-group">
-          <span id="user-display"></span>
-          <button id="btnLogout">Cerrar Sesión</button>
-          <a href="/comunidad.html" title="Ver galería comunitaria">🌐 Ver Comunidad</a>
-        </div>
-      </header>
 
       <!-- Main Workspace -->
       <div class="workspace">
         <!-- Left Toolbar -->
-        <aside class="toolbar">
-          <!-- Herramientas Principales (siempre visibles) -->
-          <div class="tool-section">
-            <h3>Herramientas</h3>
-            <div class="tools-grid">
-              <button class="tool-btn active" data-tool="brush" title="Pincel (B)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-                  <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-                  <path d="M2 2l7.586 7.586"/>
-                  <circle cx="11" cy="11" r="2"/>
-                </svg>
-              </button>
-              <button class="tool-btn" data-tool="eraser" title="Goma (E)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M20 20H7L3 16V7l5-5h10l4 4v10l-4 4z"/>
-                  <path d="M12 7l5 5"/>
-                </svg>
-              </button>
-              <button class="tool-btn" data-tool="fill" title="Relleno (G)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M19 11l-8-8-8.6 8.6a2 2 0 000 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11z"/>
-                  <path d="M5 2l5 5"/>
-                  <path d="M13 7l4 4"/>
-                </svg>
-              </button>
-              <button class="tool-btn" data-tool="picker" title="Selector (I)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M12 2L2 22h20L12 2z"/>
-                  <circle cx="12" cy="14" r="3"/>
-                </svg>
-              </button>
-              <button class="tool-btn" data-tool="selection" title="Selección (M)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/>
-                  <circle cx="8.5" cy="8.5" r="1.5"/>
-                  <circle cx="15.5" cy="8.5" r="1.5"/>
-                  <circle cx="8.5" cy="15.5" r="1.5"/>
-                  <circle cx="15.5" cy="15.5" r="1.5"/>
-                </svg>
-              </button>
-              <button class="tool-btn" data-tool="hand" title="Mano - Mover lienzo (H o Espacio)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M18 11V6a2 2 0 00-2-2v0a2 2 0 00-2 2v0"/>
-                  <path d="M14 10V4a2 2 0 00-2-2v0a2 2 0 00-2 2v2"/>
-                  <path d="M10 10.5V6a2 2 0 00-2-2v0a2 2 0 00-2 2v8"/>
-                  <path d="M18 8a2 2 0 114 0v6a8 8 0 01-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 012.83-2.83L7 15"/>
-                </svg>
-              </button>
-            </div>
+        <aside class="panel left-panel">
+          <div class="panel-header"><h3>Herramientas</h3></div>
+          <div class="tools-grid">
+            <button class="tool-btn active" data-tool="brush" title="Pincel (B)"><i class="ph ph-paint-brush"></i></button>
+            <button class="tool-btn" data-tool="eraser" title="Goma (E)"><i class="ph ph-paint-brush-broad"></i></button>
+            <button class="tool-btn" data-tool="bucket" title="Relleno (G)"><i class="ph ph-bucket"></i></button>
+            <button class="tool-btn" data-tool="picker" title="Selector (I)"><i class="ph ph-eyedropper"></i></button>
+            <button class="tool-btn" data-tool="selection" title="Selección (M)"><i class="ph ph-dashed-square"></i></button>
+            <button class="tool-btn" data-tool="hand" title="Mano / Mover (H)"><i class="ph ph-hand-grabbing"></i></button>
           </div>
-          
-          <!-- Opciones de Selección (solo visible cuando se usa selección) -->
-          <div class="tool-options" id="selectionOptions" style="display: none;">
-            <button id="btnDeleteSelection" title="Borrar selección">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-              </svg>
-              Borrar
-            </button>
-            <button id="btnCancelSelection" title="Cancelar selección">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M15 9l-6 6M9 9l6 6"/>
-              </svg>
-              Cancelar
-            </button>
-          </div>
-          
-          <!-- Opciones del Pincel/Goma (desplegable) -->
-          <details class="tool-details" id="brushDetails" open>
-            <summary class="tool-summary">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-              </svg>
-              Pincel
-            </summary>
-            <div class="tool-content">
-              <label>Tipo:</label>
-              <select id="brushType" title="Tipo de pincel">
-                <option value="round">Redondo</option>
-                <option value="square">Cuadrado</option>
-                <option value="spray">Spray</option>
-                <option value="pencil">Lápiz</option>
-                <option value="marker">Marcador</option>
-              </select>
-              <label>Tamaño: <span id="brushSizeValue">5px</span></label>
-              <input type="range" id="brushSize" min="1" max="50" value="5" />
-              
-              <!-- Color Picker -->
-              <div class="color-picker-section">
-                <label>Color:</label>
-                <input type="color" id="colorPicker" value="#000000" />
-                <div class="color-presets">
-                  <span class="preset-color" data-color="#000000"></span>
-                  <span class="preset-color" data-color="#ffffff"></span>
-                  <span class="preset-color" data-color="#ff0000"></span>
-                  <span class="preset-color" data-color="#00ff00"></span>
-                  <span class="preset-color" data-color="#0000ff"></span>
-                  <span class="preset-color" data-color="#ffff00"></span>
-                  <span class="preset-color" data-color="#ff00ff"></span>
-                  <span class="preset-color" data-color="#00ffff"></span>
-                  <span class="preset-color" data-color="#808080"></span>
-                  <span class="preset-color" data-color="#800000"></span>
-                  <span class="preset-color" data-color="#808000"></span>
-                  <span class="preset-color" data-color="#008000"></span>
+
+          <details open class="collapsible-section">
+            <summary><span><i class="ph ph-paint-brush"></i> Pincel</span><i class="ph ph-caret-down arrow"></i></summary>
+            <div class="section-content">
+              <div class="control-group">
+                <label>Tipo</label>
+                <select id="brush-type">
+                  <option value="round">Redondo</option>
+                  <option value="square">Cuadrado</option>
+                  <option value="spray">Spray</option>
+                  <option value="pencil">Lápiz</option>
+                </select>
+              </div>
+              <div class="control-group">
+                <label>Color</label>
+                <div class="color-picker-wrapper">
+                  <input type="color" id="main-color" value="#7c3aed">
+                  <div class="swatches">
+                    <div class="swatch" style="background:#000000" data-color="#000000"></div>
+                    <div class="swatch" style="background:#ffffff" data-color="#ffffff"></div>
+                    <div class="swatch" style="background:#ff0000" data-color="#ff0000"></div>
+                    <div class="swatch" style="background:#00ff00" data-color="#00ff00"></div>
+                    <div class="swatch" style="background:#0000ff" data-color="#0000ff"></div>
+                    <div class="swatch" style="background:#ffff00" data-color="#ffff00"></div>
+                  </div>
                 </div>
               </div>
             </div>
           </details>
-          
-          <!-- Acciones Rápidas (siempre visibles) -->
-          <div class="tool-section">
-            <h3>Acciones</h3>
-            <div class="actions-grid">
-              <button id="btnUndo" title="Deshacer (Ctrl+Z)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M3 10h10a5 5 0 015 5v2"/>
-                  <path d="M7 6L3 10l4 4"/>
-                </svg>
-              </button>
-              <button id="btnRedo" title="Rehacer (Ctrl+Y)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M21 10H11a5 5 0 00-5 5v2"/>
-                  <path d="M17 6l4 4-4 4"/>
-                </svg>
-              </button>
-              <button id="btnZoomOut" title="Alejar (-)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <circle cx="11" cy="11" r="8"/>
-                  <path d="M21 21l-4.35-4.35"/>
-                  <path d="M8 11h6"/>
-                </svg>
-              </button>
-              <button id="btnZoomIn" title="Acercar (+)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <circle cx="11" cy="11" r="8"/>
-                  <path d="M21 21l-4.35-4.35"/>
-                  <path d="M11 8v6M8 11h6"/>
-                </svg>
-              </button>
-            </div>
-            <div class="zoom-info">
-              <span id="zoomValue">100%</span>
-              <button id="btnZoomReset" title="Resetear zoom (0)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/>
-                  <path d="M3 3v5h5"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <!-- Herramientas Avanzadas (desplegable) -->
-          <details class="tool-details">
-            <summary class="tool-summary">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
-              </svg>
-              Avanzadas
-            </summary>
-            <div class="tool-content compact">
-              <button id="btnResizeCanvas" class="btn-small" title="Cambiar tamaño del lienzo">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-                </svg>
-                Redimensionar
-              </button>
-              <button id="btnToggleTheme" class="btn-small" title="Cambiar tema claro/oscuro">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <circle cx="12" cy="12" r="5"/>
-                  <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-                </svg>
-                Tema
-              </button>
+
+          <details class="collapsible-section">
+            <summary><span><i class="ph ph-gear"></i> Avanzadas</span><i class="ph ph-caret-down arrow"></i></summary>
+            <div class="section-content compact-grid">
+              <button id="btn-open-resize" class="btn-small"><i class="ph ph-crop"></i> Redimensionar</button>
+              <button id="btn-toggle-theme" class="btn-small"><i class="ph ph-moon"></i> Tema</button>
+              <button id="btn-export" class="btn-small"><i class="ph ph-download-simple"></i> Exportar</button>
+              <button id="btn-new-project" class="btn-small"><i class="ph ph-plus-circle"></i> Nuevo</button>
             </div>
           </details>
         </aside>
 
         <!-- Canvas Area -->
         <main class="canvas-area">
-          <!-- Contextual Properties Bar -->
-          <div id="properties-bar" class="properties-bar">
-            <span class="properties-label">Propiedades:</span>
-            <div id="properties-content" class="properties-content">
-              <!-- Dynamic content based on selected tool -->
-            </div>
-          </div>
-          
-          <div id="canvas-container" class="canvas-container">
-            <!-- Layers will be created here dynamically -->
+          <div id="canvas-viewport" class="canvas-viewport">
+            <canvas id="main-canvas"></canvas>
           </div>
           
           <!-- Status Bar -->
-          <div id="status-bar" class="status-bar">
-            <div class="status-left">
-              <span id="status-coords">X: 0 Y: 0</span>
-              <span class="status-separator">|</span>
-              <span id="status-tool">Herramienta: Pincel</span>
-            </div>
-            <div class="status-right">
-              <span id="status-zoom">Zoom: 100%</span>
-              <span class="status-separator">|</span>
-              <span id="status-dimensions">800 x 600 px</span>
-            </div>
-          </div>
+          <footer class="status-bar">
+            <div class="status-item"><i class="ph ph-cursor-click"></i><span id="status-coords" class="mono">X: 0 Y: 0</span></div>
+            <div class="status-item"><i class="ph ph-tool"></i><span id="status-tool">Pincel</span></div>
+            <div class="status-divider"></div>
+            <div class="status-item"><i class="ph ph-image"></i><span id="status-dimensions" class="mono">800 x 600 px</span></div>
+            <div class="status-item"><i class="ph ph-magnifying-glass"></i><span id="status-zoom" class="mono">100%</span></div>
+          </footer>
         </main>
 
         <!-- Right Panel - Layers -->
-        <aside class="layers-panel">
+        <aside class="panel right-panel">
           <div class="panel-header">
             <h3>Capas</h3>
-            <button id="btnCollapseLayers" class="btn-collapse" title="Colapsar panel">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M15 18l-6-6 6-6"/>
-              </svg>
-            </button>
+            <button id="toggle-layers-panel" class="icon-btn-sm" title="Colapsar"><i class="ph ph-caret-right"></i></button>
           </div>
-          <div class="layers-controls">
-            <button id="btnAddLayer" title="Nueva capa">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-            </button>
-            <button id="btnDeleteLayer" title="Eliminar capa">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-              </svg>
-            </button>
-            <button id="btnMergeDown" title="Fusionar hacia abajo">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
-              </svg>
-            </button>
+          <div id="layers-list" class="layers-list"></div>
+          <div class="layers-actions">
+            <button id="btn-add-layer" title="Nueva Capa"><i class="ph ph-plus"></i></button>
+            <button id="btn-del-layer" title="Eliminar Capa"><i class="ph ph-trash"></i></button>
+            <button id="btn-merge-layer" title="Fusionar"><i class="ph ph-arrows-merge"></i></button>
           </div>
-          <div id="layers-list" class="layers-list">
-            <!-- Layer items will be added here -->
+          <div class="panel-spacer"></div>
+          <div class="community-section">
+            <h4>Comunidad</h4>
+            <button id="btn-save-community" class="btn-full primary"><i class="ph ph-cloud-arrow-up"></i> Publicar</button>
+            <a href="comunidad.html" target="_blank" class="btn-full secondary"><i class="ph ph-globe"></i> Ver Galería</a>
           </div>
         </aside>
       </div>
     </div>
 
-    <!-- Modal for Image Import -->
-    <div id="import-modal" class="modal hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Importar Imagen</h3>
-          <button class="modal-close" id="closeImportModal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p>¿Cómo deseas ajustar la imagen al lienzo?</p>
-          <div class="import-options">
-            <button id="btnImportFit" class="import-option">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M12 8v8M8 12h8"/>
-              </svg>
-              <span>Ajustar al lienzo</span>
-            </button>
-            <button id="btnImportOriginal" class="import-option">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-              </svg>
-              <span>Tamaño original</span>
-            </button>
-            <button id="btnImportCenter" class="import-option">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="12" cy="12" r="10"/>
-                <circle cx="12" cy="12" r="4"/>
-              </svg>
-              <span>Centrar</span>
-            </button>
-          </div>
-          <div id="import-preview" class="import-preview"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal for Canvas Resize -->
-    <div id="resize-modal" class="modal hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Redimensionar Lienzo</h3>
-          <button class="modal-close" id="closeResizeModal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="resizeWidth">Ancho (px):</label>
-            <input type="number" id="resizeWidth" min="1" max="4096" value="800" />
-          </div>
-          <div class="form-group">
-            <label for="resizeHeight">Alto (px):</label>
-            <input type="number" id="resizeHeight" min="1" max="4096" value="600" />
-          </div>
-          <div class="form-group">
-            <label for="resizeAnchor">Anclaje:</label>
-            <select id="resizeAnchor">
-              <option value="center">Centro</option>
-              <option value="top-left">Superior izquierda</option>
-              <option value="top-center">Superior centro</option>
-              <option value="top-right">Superior derecha</option>
-              <option value="middle-left">Centro izquierda</option>
-              <option value="middle-right">Centro derecha</option>
-              <option value="bottom-left">Inferior izquierda</option>
-              <option value="bottom-center">Inferior centro</option>
-              <option value="bottom-right">Inferior derecha</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>
-              <input type="checkbox" id="resizeScaleContent" checked />
-              Escalar contenido existente
-            </label>
-          </div>
-          <div class="modal-actions">
-            <button id="btnApplyResize" class="btn-primary">Aplicar</button>
-            <button id="btnCancelResize" class="btn-secondary">Cancelar</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Hidden file input for import -->
     <input type="file" id="fileInput" accept="image/*" style="display: none;" />
-
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

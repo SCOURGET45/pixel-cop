@@ -1,1279 +1,390 @@
-import './style.css'
-import { authService } from './auth'
-import { LayerManager } from './layers'
-import { DrawingTools, ToolType } from './tools'
-import { PixelCop } from './pixel-cop'
+// Estado Global
+const state = {
+    tool: 'brush',
+    color: '#7c3aed',
+    brushSize: 10,
+    brushType: 'round',
+    isDrawing: false,
+    zoom: 1,
+    canvasWidth: 800,
+    canvasHeight: 600,
+    layers: [] as any[],
+    activeLayerIndex: 0,
+    panStart: { x: 0, y: 0 },
+    isPanning: false,
+    pendingImage: null as HTMLImageElement | null
+};
 
-// Canvas dimensions
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 600;
+// Referencias DOM
+const canvas = document.getElementById('main-canvas') as HTMLCanvasElement;
+const ctx = canvas.getContext('2d')!;
+const viewport = document.getElementById('canvas-viewport')!;
+const splashScreen = document.getElementById('splash-screen')!;
+const appContainer = document.getElementById('app-container')!;
+const authContainer = document.getElementById('auth-container')!;
 
-// Auto-save interval (30 seconds)
-const AUTO_SAVE_INTERVAL = 30000;
+// Elementos de UI
+const statusCoords = document.getElementById('status-coords')!;
+const statusTool = document.getElementById('status-tool')!;
+const statusDimensions = document.getElementById('status-dimensions')!;
+const statusZoom = document.getElementById('status-zoom')!;
+const brushSizeSlider = document.getElementById('brush-size-slider') as HTMLInputElement;
+const brushSizeValue = document.getElementById('brush-size-value')!;
 
-// App state
-let layerManager: LayerManager | null = null;
-let drawingTools: DrawingTools | null = null;
-let pixelCop: PixelCop | null = null;
-let isAppInitialized = false;
-let hayCambiosSinGuardar = false;
-let autoSaveTimer: number | null = null;
-let currentProjectId: string | null = null;
-let originalImageData: string | null = null; // Para Pixel-Cop
-
-// Undo/Redo state
-let undoStack: ImageData[] = [];
-let redoStack: ImageData[] = [];
-const MAX_HISTORY_SIZE = 50;
-
-// Zoom state
-let currentZoom: number = 1; // 1 = 100%
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 5;
-
-// Global app object for navigation
-declare global {
-  interface Window {
-    app: {
-      showView: (viewName: string) => void;
-    };
-  }
-}
-
-// Initialize the application
-function init(): void {
-  setupNavigation();
-  checkAuth();
-}
-
-// Setup navigation between views
-function setupNavigation(): void {
-  window.app = {
-    showView: (viewName: string) => {
-      // Hide all views
-      document.querySelectorAll('.view').forEach(view => {
-        view.classList.remove('active');
-        view.classList.add('hidden');
-      });
-      
-      // Show requested view
-      const targetView = document.getElementById(`${viewName}View`);
-      if (targetView) {
-        targetView.classList.remove('hidden');
-        targetView.classList.add('active');
-      }
-      
-      // Initialize editor if entering editor view
-      if (viewName === 'editor' && !isAppInitialized) {
+// Inicialización
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        splashScreen.style.opacity = '0';
         setTimeout(() => {
-          if (!authService.isLoggedIn()) {
-            alert('Para usar el editor, primero debes iniciar sesión.');
-            window.app.showView('auth');
-          } else {
-            initializeApp();
-          }
-        }, 100);
-      }
-      
-      // Load community gallery if entering community view
-      if (viewName === 'community') {
-        import('./comunidad').then(module => {
-          module.loadProjects();
-        });
-      }
-    }
-  };
-  
-  // Mobile menu toggle
-  const mobileMenu = document.getElementById('mobileMenu');
-  const navLinks = document.getElementById('navLinks');
-  
-  if (mobileMenu && navLinks) {
-    mobileMenu.addEventListener('click', () => {
-      navLinks.classList.toggle('active');
-    });
-  }
+            splashScreen.style.display = 'none';
+            appContainer.classList.remove('hidden');
+            setTimeout(() => appContainer.classList.add('visible'), 50);
+            initCanvas();
+            updateStatusBar();
+        }, 500);
+    }, 1500);
+
+    setupEventListeners();
+    setupTools();
+    generateAnchorGrid();
+});
+
+function initCanvas() {
+    canvas.width = state.canvasWidth;
+    canvas.height = state.canvasHeight;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    state.layers = [{ name: 'Fondo', visible: true }];
+    renderLayersList();
+    updateStatusBar();
 }
 
-// Check if user is logged in
-function checkAuth(): void {
-  updateNavForAuth();
-  setupAuthForms();
-}
-
-// Setup authentication forms (login/register)
-function setupAuthForms(): void {
-  const loginForm = document.getElementById('loginForm') as HTMLFormElement;
-  const registerForm = document.getElementById('registerForm') as HTMLFormElement;
-  const showRegisterLink = document.getElementById('showRegister');
-  const showLoginLink = document.getElementById('showLogin');
-  const loginFormDiv = document.getElementById('login-form');
-  const registerFormDiv = document.getElementById('register-form');
-  const authContainer = document.getElementById('auth-container');
-  const appContainer = document.getElementById('app-container');
-
-  // Toggle between login and register forms
-  if (showRegisterLink && loginFormDiv && registerFormDiv) {
-    showRegisterLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      loginFormDiv.classList.add('hidden');
-      registerFormDiv.classList.remove('hidden');
-    });
-  }
-
-  if (showLoginLink && loginFormDiv && registerFormDiv) {
-    showLoginLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      registerFormDiv.classList.add('hidden');
-      loginFormDiv.classList.remove('hidden');
-    });
-  }
-
-  // Handle login form submission
-  if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const usuarioInput = document.getElementById('loginUsuario') as HTMLInputElement;
-      const passwordInput = document.getElementById('loginPassword') as HTMLInputElement;
-      
-      const result = await authService.login(usuarioInput.value, passwordInput.value);
-      
-      if (result.success) {
-        alert(result.message);
-        updateAuthUI(true);
-      } else {
-        alert(result.message);
-      }
-    });
-  }
-
-  // Handle register form submission
-  if (registerForm) {
-    const errorDiv = document.getElementById('registerError') as HTMLDivElement;
-    const successDiv = document.getElementById('registerSuccess') as HTMLDivElement;
-    const submitBtn = document.getElementById('btnRegisterSubmit') as HTMLButtonElement;
-    
-    registerForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      // Limpiar mensajes previos
-      if (errorDiv) errorDiv.classList.add('hidden');
-      if (successDiv) successDiv.classList.add('hidden');
-      
-      const nombreInput = document.getElementById('regNombre') as HTMLInputElement;
-      const usuarioInput = document.getElementById('regUsuario') as HTMLInputElement;
-      const correoInput = document.getElementById('regCorreo') as HTMLInputElement;
-      const passwordInput = document.getElementById('regPassword') as HTMLInputElement;
-      
-      // Validaciones adicionales
-      if (!nombreInput.value.trim()) {
-        if (errorDiv) {
-          errorDiv.textContent = '❌ El nombre completo es requerido';
-          errorDiv.classList.remove('hidden');
-        }
-        return;
-      }
-      
-      if (!usuarioInput.value.trim() || !/^[a-zA-Z0-9_]+$/.test(usuarioInput.value)) {
-        if (errorDiv) {
-          errorDiv.textContent = '❌ El usuario solo puede contener letras, números y guiones bajos (ej: artista_pixel)';
-          errorDiv.classList.remove('hidden');
-        }
-        return;
-      }
-      
-      if (!correoInput.value.trim() || !/\S+@\S+\.\S+/.test(correoInput.value)) {
-        if (errorDiv) {
-          errorDiv.textContent = '❌ Ingresa un correo electrónico válido (ej: juan@ejemplo.com)';
-          errorDiv.classList.remove('hidden');
-        }
-        return;
-      }
-      
-      if (!passwordInput.value || passwordInput.value.length < 6) {
-        if (errorDiv) {
-          errorDiv.textContent = '❌ La contraseña debe tener al menos 6 caracteres';
-          errorDiv.classList.remove('hidden');
-        }
-        return;
-      }
-      
-      // Deshabilitar botón durante el registro
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Registrando...';
-      }
-      
-      try {
-        const result = await authService.register({
-          Nombre: nombreInput.value.trim(),
-          Usuario: usuarioInput.value.trim(),
-          correo: correoInput.value.trim(),
-          password: passwordInput.value
-        });
-        
-        if (result.success) {
-          if (successDiv) {
-            successDiv.textContent = '✅ ' + result.message;
-            successDiv.classList.remove('hidden');
-          }
-          // Switch to login form after successful registration
-          setTimeout(() => {
-            if (loginFormDiv && registerFormDiv) {
-              registerFormDiv.classList.add('hidden');
-              loginFormDiv.classList.remove('hidden');
-            }
-          }, 1500);
-        } else {
-          if (errorDiv) {
-            errorDiv.textContent = '❌ ' + result.message;
-            errorDiv.classList.remove('hidden');
-          }
-        }
-      } catch (error) {
-        console.error('Error en registro:', error);
-        if (errorDiv) {
-          errorDiv.textContent = '❌ Error de conexión. Verifica que el backend esté ejecutándose.';
-          errorDiv.classList.remove('hidden');
-        }
-      } finally {
-        // Reactivar botón
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Registrarse';
-        }
-      }
-    });
-  }
-
-  // Initial UI update
-  updateAuthUI(authService.isLoggedIn());
-}
-
-// Update UI based on authentication status
-function updateAuthUI(isLoggedIn: boolean): void {
-  const authContainer = document.getElementById('auth-container');
-  const appContainer = document.getElementById('app-container');
-  const userDisplay = document.getElementById('user-display');
-  const currentUser = authService.getCurrentUser();
-
-  if (isLoggedIn && authContainer && appContainer) {
-    authContainer.classList.add('hidden');
-    appContainer.classList.remove('hidden');
-    
-    if (userDisplay && currentUser) {
-      userDisplay.textContent = `👤 ${currentUser.Usuario}`;
-    }
-    
-    // Initialize the app if not already done
-    if (!isAppInitialized) {
-      initializeApp();
-    }
-  } else if (!isLoggedIn && authContainer && appContainer) {
-    authContainer.classList.remove('hidden');
-    appContainer.classList.add('hidden');
-    
-    if (userDisplay) {
-      userDisplay.textContent = '';
-    }
-  }
-}
-
-// Update navigation based on auth status
-function updateNavForAuth(): void {
-  const loginBtn = document.getElementById('loginBtn');
-  const user = authService.getCurrentUser();
-  
-  if (user && loginBtn) {
-    loginBtn.textContent = `👤 ${user.Usuario}`;
-    loginBtn.onclick = () => {
-      if (confirm('¿Cerrar sesión?')) {
-        authService.logout();
-        location.reload();
-      }
-    };
-  }
-}
-
-// Initialize the main application
-function initializeApp(): void {
-  isAppInitialized = true;
-  
-  // Get DOM elements and verify they exist
-  const canvasContainer = document.getElementById('canvas-container');
-  const layersList = document.getElementById('layers-list');
-  
-  if (!canvasContainer) {
-    console.error("Error: No se encontró el contenedor del canvas (#canvas-container)");
-    alert("Error crítico: No se pudo cargar el editor. Por favor recarga la página.");
-    return;
-  }
-  
-  if (!layersList) {
-    console.error("Error: No se encontró la lista de capas (#layers-list)");
-    alert("Error crítico: No se pudo cargar el gestor de capas.");
-    return;
-  }
-  
-  // Asegurar que el contenedor tenga dimensiones válidas antes de continuar
-  if (canvasContainer.offsetWidth === 0 || canvasContainer.offsetHeight === 0) {
-    console.warn("Advertencia: El contenedor del canvas tiene dimensiones 0. Intentando continuar con valores por defecto...");
-  }
-  
-  // Initialize tools
-  drawingTools = new DrawingTools();
-  
-  try {
-    // Initialize layer manager
-    layerManager = new LayerManager(canvasContainer, layersList);
-    
-    // Create initial canvas and layer
-    createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
-  } catch (error) {
-    console.error("Error fatal al inicializar el editor:", error);
-    alert("Hubo un error al iniciar el editor. Revisa la consola para más detalles.");
-    return;
-  }
-  
-  // Initialize Pixel-Cop after canvas is created
-  const activeLayer = layerManager.getActiveLayer();
-  if (activeLayer) {
-    pixelCop = new PixelCop(activeLayer.canvas);
-  }
-  
-  // Setup toolbar
-  setupToolbar();
-  
-  // Setup menu actions
-  setupMenuActions();
-  
-  // Setup layers panel
-  setupLayersPanel();
-  
-  // Start auto-save timer
-  startAutoSave();
-}
-
-// Start auto-save timer
-function startAutoSave(): void {
-  if (autoSaveTimer) return;
-  
-  autoSaveTimer = window.setInterval(() => {
-    if (hayCambiosSinGuardar && currentProjectId) {
-      saveProjectToCloud(currentProjectId);
-      console.log('Guardado automático realizado...');
-      hayCambiosSinGuardar = false;
-    }
-  }, AUTO_SAVE_INTERVAL);
-}
-
-// Mark canvas as changed (for auto-save)
-function markCanvasChanged(): void {
-  hayCambiosSinGuardar = true;
-}
-
-// Save current state to undo stack
-function saveState(): void {
-  if (!layerManager) return;
-  
-  const activeCtx = layerManager.getActiveCtx();
-  if (!activeCtx) return;
-  
-  const canvas = activeCtx.canvas;
-  const imageData = activeCtx.getImageData(0, 0, canvas.width, canvas.height);
-  
-  // Push to undo stack
-  undoStack.push(imageData);
-  
-  // Limit stack size
-  if (undoStack.length > MAX_HISTORY_SIZE) {
-    undoStack.shift();
-  }
-  
-  // Clear redo stack when new action is performed
-  redoStack = [];
-}
-
-// Undo last action
-function undo(): void {
-  if (!layerManager || undoStack.length === 0) return;
-  
-  const activeCtx = layerManager.getActiveCtx();
-  if (!activeCtx) return;
-  
-  const canvas = activeCtx.canvas;
-  
-  // Save current state to redo stack
-  const currentState = activeCtx.getImageData(0, 0, canvas.width, canvas.height);
-  redoStack.push(currentState);
-  
-  // Pop from undo stack and restore
-  const previousState = undoStack.pop()!;
-  activeCtx.putImageData(previousState, 0, 0);
-  
-  updateZoomDisplay();
-}
-
-// Redo last undone action
-function redo(): void {
-  if (!layerManager || redoStack.length === 0) return;
-  
-  const activeCtx = layerManager.getActiveCtx();
-  if (!activeCtx) return;
-  
-  const canvas = activeCtx.canvas;
-  
-  // Save current state to undo stack
-  const currentState = activeCtx.getImageData(0, 0, canvas.width, canvas.height);
-  undoStack.push(currentState);
-  
-  // Pop from redo stack and restore
-  const nextState = redoStack.pop()!;
-  activeCtx.putImageData(nextState, 0, 0);
-  
-  updateZoomDisplay();
-}
-
-// Apply zoom to canvas container
-function applyZoom(): void {
-  const canvasContainer = document.getElementById('canvas-container');
-  if (!canvasContainer) return;
-  
-  canvasContainer.style.transform = `scale(${currentZoom})`;
-  canvasContainer.style.transformOrigin = 'top left';
-  
-  // Update zoom display
-  updateZoomDisplay();
-}
-
-// Update zoom display value
-function updateZoomDisplay(): void {
-  const zoomValue = document.getElementById('zoomValue');
-  if (zoomValue) {
-    zoomValue.textContent = `${Math.round(currentZoom * 100)}%`;
-  }
-}
-
-// Zoom in
-function zoomIn(): void {
-  currentZoom = Math.min(currentZoom + 0.1, MAX_ZOOM);
-  applyZoom();
-}
-
-// Zoom out
-function zoomOut(): void {
-  currentZoom = Math.max(currentZoom - 0.1, MIN_ZOOM);
-  applyZoom();
-}
-
-// Reset zoom
-function resetZoom(): void {
-  currentZoom = 1;
-  applyZoom();
-}
-
-// Create canvas with specified dimensions
-function createCanvas(width: number, height: number): void {
-  if (!layerManager) return;
-  
-  // Clear existing canvases
-  const container = document.getElementById('canvas-container');
-  if (!container) {
-    console.error("Error: No se encontró el contenedor 'canvas-container' en el DOM.");
-    return;
-  }
-  container.innerHTML = '';
-  container.style.width = `${width}px`;
-  container.style.height = `${height}px`;
-  
-  // Reset zoom when creating new canvas
-  resetZoom();
-  
-  // Clear undo/redo stacks
-  undoStack = [];
-  redoStack = [];
-  
-  // Create first layer
-  const layer = layerManager.createLayer('Fondo');
-  layer.canvas.width = width;
-  layer.canvas.height = height;
-  
-  // Fill with white background
-  layer.ctx.fillStyle = '#ffffff';
-  layer.ctx.fillRect(0, 0, width, height);
-  
-  // Save initial state
-  saveState();
-}
-
-// Setup toolbar event listeners
-function setupToolbar(): void {
-  if (!drawingTools) return;
-  
-  // Tool buttons
-  const toolButtons = document.querySelectorAll('.tool-btn');
-  toolButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      // Remove active class from all buttons
-      toolButtons.forEach(b => b.classList.remove('active'));
-      // Add active class to clicked button
-      btn.classList.add('active');
-      
-      const tool = (btn as HTMLElement).dataset.tool as ToolType;
-      drawingTools!.setTool(tool);
-      
-      // Toggle brush options visibility based on selected tool
-      const brushOptions = document.getElementById('brushOptions');
-      if (brushOptions) {
-        // Show brush options only when brush or eraser is selected
-        if (tool === 'brush' || tool === 'eraser') {
-          brushOptions.style.display = 'flex';
-        } else {
-          brushOptions.style.display = 'none';
-        }
-      }
-    });
-  });
-  
-  // Brush size
-  const brushSizeInput = document.getElementById('brushSize') as HTMLInputElement;
-  const brushSizeValue = document.getElementById('brushSizeValue')!;
-  
-  brushSizeInput.addEventListener('input', () => {
-    const size = parseInt(brushSizeInput.value, 10);
-    brushSizeValue.textContent = `${size}px`;
-    drawingTools!.setBrushSize(size);
-  });
-  
-  // Brush type selector
-  const brushTypeSelect = document.getElementById('brushType') as HTMLSelectElement;
-  brushTypeSelect.addEventListener('change', () => {
-    drawingTools!.setBrushType(brushTypeSelect.value as 'round' | 'square' | 'spray' | 'pencil' | 'marker');
-  });
-  
-  // Color picker
-  const colorPicker = document.getElementById('colorPicker') as HTMLInputElement;
-  colorPicker.addEventListener('input', () => {
-    drawingTools!.setColor(colorPicker.value);
-  });
-  
-  // Color presets
-  const presetColors = document.querySelectorAll('.preset-color');
-  presetColors.forEach(preset => {
-    preset.addEventListener('click', () => {
-      const color = (preset as HTMLElement).dataset.color!;
-      drawingTools!.setColor(color);
-      colorPicker.value = color;
-    });
-  });
-  
-  // Canvas drawing events
-  const canvasContainer = document.getElementById('canvas-container')!;
-  
-  canvasContainer.addEventListener('mousedown', (e) => {
-    if (!layerManager || !drawingTools) return;
-    
-    const rect = canvasContainer.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const ctx = layerManager.getActiveCtx();
-    
-    if (!ctx) return;
-    
-    const tool = drawingTools.getCurrentTool();
-    
-    if (tool === 'selection') {
-      drawingTools.startSelection(x, y);
-    } else {
-      drawingTools.startDrawing(x, y, ctx);
-    }
-  });
-  
-  canvasContainer.addEventListener('mousemove', (e) => {
-    if (!layerManager || !drawingTools) return;
-    
-    const rect = canvasContainer.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const ctx = layerManager.getActiveCtx();
-    
-    if (!ctx) return;
-    
-    const tool = drawingTools.getCurrentTool();
-    
-    if (tool === 'selection') {
-      const selectionRect = drawingTools.updateSelection(x, y);
-      if (selectionRect && drawingTools.isCurrentlySelecting()) {
-        // Visual feedback for selection rectangle could be added here
-        markCanvasChanged();
-      }
-    } else if (drawingTools.getCurrentTool() === 'picker' && e.buttons === 0) {
-      // Just hovering with picker tool
-      canvasContainer.style.cursor = 'crosshair';
-    } else {
-      drawingTools.draw(x, y, ctx);
-      markCanvasChanged();
-    }
-  });
-  
-  canvasContainer.addEventListener('mouseup', (e) => {
-    if (!drawingTools) return;
-    
-    const tool = drawingTools.getCurrentTool();
-    
-    if (tool === 'selection') {
-      const rect = canvasContainer.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const ctx = layerManager!.getActiveCtx();
-      
-      if (!ctx) return;
-      
-      const buffer = drawingTools.endSelection(ctx);
-      if (buffer) {
-        // Show selection options
-        const selectionOptions = document.getElementById('selectionOptions');
-        if (selectionOptions) {
-          selectionOptions.style.display = 'block';
-        }
-        markCanvasChanged();
-        saveState(); // Save state after selection
-      }
-    } else {
-      drawingTools.stopDrawing();
-      saveState(); // Save state after drawing stroke ends
-    }
-  });
-  
-  canvasContainer.addEventListener('mouseleave', () => {
-    if (drawingTools) {
-      drawingTools.stopDrawing();
-    }
-  });
-  
-  // Keyboard shortcuts for tools, selection, undo/redo, and zoom
-  window.addEventListener('keydown', (e) => {
-    if (!drawingTools || !layerManager) return;
-    
-    const tool = drawingTools.getCurrentTool();
-    
-    // Don't trigger shortcuts when typing in inputs
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-      return;
-    }
-    
-    // Tool shortcuts
-    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
-      switch(e.key.toLowerCase()) {
-        case 'b':
-          selectTool('brush');
-          return;
-        case 'e':
-          selectTool('eraser');
-          return;
-        case 'g':
-          selectTool('fill');
-          return;
-        case 'i':
-          selectTool('picker');
-          return;
-        case 'm':
-          selectTool('selection');
-          return;
-      }
-    }
-    
-    // Ctrl+Z for Undo
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-      e.preventDefault();
-      undo();
-      return;
-    }
-    
-    // Ctrl+Y or Ctrl+Shift+Z for Redo
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
-      e.preventDefault();
-      redo();
-      return;
-    }
-    
-    // Zoom shortcuts: +/- / 0
-    if ((e.ctrlKey || e.metaKey) && e.key === '+') {
-      e.preventDefault();
-      zoomIn();
-      return;
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === '-') {
-      e.preventDefault();
-      zoomOut();
-      return;
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === '0') {
-      e.preventDefault();
-      resetZoom();
-      return;
-    }
-    
-    // Delete or Backspace to delete selection
-    if ((e.key === 'Delete' || e.key === 'Backspace') && tool === 'selection') {
-      const ctx = layerManager.getActiveCtx();
-      if (!ctx) return;
-      
-      if (drawingTools.getSelectionBuffer()) {
-        drawingTools.clearSelection(ctx);
-        drawingTools.cancelSelection();
-        
-        // Hide selection options
-        const selectionOptions = document.getElementById('selectionOptions');
-        if (selectionOptions) {
-          selectionOptions.style.display = 'none';
-        }
-        
-        markCanvasChanged();
-        saveState(); // Save state after deleting selection
-        e.preventDefault();
-      }
-    }
-  });
-  
-  // Helper function to select tool by name
-  function selectTool(toolName: string): void {
-    const buttons = document.querySelectorAll('.tool-btn[data-tool]');
+// Configuración de Herramientas
+function setupTools() {
+    const buttons = document.querySelectorAll('.tool-btn');
     buttons.forEach(btn => {
-      if (btn.getAttribute('data-tool') === toolName) {
-        btn.classList.add('active');
-        // Trigger click to run existing tool change logic
-        btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      } else {
-        btn.classList.remove('active');
-      }
+        btn.addEventListener('click', () => {
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const toolName = btn.getAttribute('data-tool');
+            if (toolName) setTool(toolName);
+        });
     });
-  }
-  
-  canvasContainer.addEventListener('click', (e) => {
-    if (!layerManager || !drawingTools) return;
-    
-    const tool = drawingTools.getCurrentTool();
-    
-    if (tool === 'picker') {
-      const rect = canvasContainer.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const ctx = layerManager.getActiveCtx();
-      
-      if (!ctx) return;
-      
-      const pickedColor = drawingTools.pickColor(x, y, ctx);
-      if (pickedColor) {
-        drawingTools.setColor(pickedColor);
-        const colorPicker = document.getElementById('colorPicker') as HTMLInputElement;
-        colorPicker.value = pickedColor;
-      }
-    } else if (tool === 'fill') {
-      const rect = canvasContainer.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const ctx = layerManager.getActiveCtx();
-      
-      if (!ctx) return;
-      
-      drawingTools.startDrawing(x, y, ctx);
-    }
-  });
+
+    brushSizeSlider.addEventListener('input', (e) => {
+        state.brushSize = parseInt((e.target as HTMLInputElement).value);
+        brushSizeValue.textContent = `${state.brushSize}px`;
+        updateContextBar();
+    });
+
+    const brushTypeSelect = document.getElementById('brush-type') as HTMLSelectElement;
+    brushTypeSelect.addEventListener('change', (e) => {
+        state.brushType = (e.target as HTMLSelectElement).value;
+    });
+
+    const colorInput = document.getElementById('main-color') as HTMLInputElement;
+    colorInput.addEventListener('input', (e) => {
+        state.color = (e.target as HTMLInputElement).value;
+    });
+
+    document.querySelectorAll('.swatch').forEach(swatch => {
+        swatch.addEventListener('click', () => {
+            const color = (swatch as HTMLElement).getAttribute('data-color');
+            if (color) {
+                state.color = color;
+                colorInput.value = color;
+            }
+        });
+    });
 }
 
-// Setup menu actions
-function setupMenuActions(): void {
-  // New file
-  document.getElementById('btnNew')!.addEventListener('click', () => {
-    if (confirm('¿Crear nuevo lienzo? Se perderá el trabajo actual no guardado.')) {
-      createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
-    }
-  });
-  
-  // Open file (import image)
-  document.getElementById('btnOpen')!.addEventListener('click', () => {
-    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-    fileInput.click();
-  });
-  
-  document.getElementById('fileInput')!.addEventListener('change', (e) => {
-    const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
+function setTool(toolName: string) {
+    state.tool = toolName;
+    viewport.style.cursor = toolName === 'hand' ? 'grab' : 'crosshair';
     
-    if (file && layerManager) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
+    const toolNames: Record<string, string> = {
+        brush: 'Pincel', eraser: 'Goma', bucket: 'Relleno',
+        picker: 'Selector', selection: 'Selección', hand: 'Mano'
+    };
+    statusTool.textContent = toolNames[toolName] || toolName;
+    updateContextBar();
+}
+
+function updateContextBar() {
+    const brushSettings = document.getElementById('ctx-brush-settings')!;
+    const toolInfo = document.getElementById('ctx-tool-info')!;
+
+    if (state.tool === 'brush' || state.tool === 'eraser') {
+        brushSettings.classList.remove('hidden');
+        toolInfo.classList.add('hidden');
+    } else {
+        brushSettings.classList.add('hidden');
+        toolInfo.classList.remove('hidden');
+        toolInfo.innerHTML = `<span class="info-text">Herramienta: ${statusTool.textContent}</span>`;
+    }
+}
+
+// Dibujo y Eventos del Canvas
+let lastX = 0, lastY = 0;
+
+function setupEventListeners() {
+    canvas.addEventListener('mousedown', (e) => {
+        if (state.tool === 'hand') {
+            state.isPanning = true;
+            state.panStart = { x: e.clientX - viewport.scrollLeft, y: e.clientY - viewport.scrollTop };
+            viewport.style.cursor = 'grabbing';
+            return;
+        }
+        state.isDrawing = true;
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+        draw(e);
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX - rect.left) / state.zoom);
+        const y = Math.floor((e.clientY - rect.top) / state.zoom);
+        statusCoords.textContent = `X: ${x} Y: ${y}`;
+
+        if (state.isPanning) {
+            viewport.scrollTo(e.clientX - state.panStart.x, e.clientY - state.panStart.y);
+            return;
+        }
+        if (!state.isDrawing) return;
+        draw(e);
+    });
+
+    window.addEventListener('mouseup', () => {
+        state.isDrawing = false;
+        state.isPanning = false;
+        viewport.style.cursor = state.tool === 'hand' ? 'grab' : 'crosshair';
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' || e.key.toLowerCase() === 'h') {
+            (document.querySelector('[data-tool="hand"]') as HTMLElement)?.click();
+        }
+        if (e.key.toLowerCase() === 'b') document.querySelector('[data-tool="brush"]')?.click();
+        if (e.key.toLowerCase() === 'e') document.querySelector('[data-tool="eraser"]')?.click();
+        if (e.ctrlKey && e.key === '+') changeZoom(0.1);
+        if (e.ctrlKey && e.key === '-') changeZoom(-0.1);
+        if (e.ctrlKey && e.key === '0') resetZoom();
+        if (e.ctrlKey && e.key.toLowerCase() === 'o') {
+            e.preventDefault();
+            (document.getElementById('fileInput') as HTMLInputElement)?.click();
+        }
+    });
+
+    viewport.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            changeZoom(e.deltaY > 0 ? -0.1 : 0.1);
+        }
+    });
+
+    // Botones UI
+    document.getElementById('btn-open-resize')?.addEventListener('click', () => openModal('resize-modal'));
+    document.getElementById('btn-toggle-theme')?.addEventListener('click', toggleTheme);
+    document.getElementById('btn-export')?.addEventListener('click', exportImage);
+    document.getElementById('btn-new-project')?.addEventListener('click', () => location.reload());
+    document.getElementById('btn-add-layer')?.addEventListener('click', addLayer);
+    document.getElementById('btn-del-layer')?.addEventListener('click', deleteLayer);
+    
+    document.getElementById('toggle-layers-panel')?.addEventListener('click', () => {
+        document.querySelector('.right-panel')?.classList.toggle('collapsed');
+    });
+
+    // Input de archivo
+    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+    fileInput?.addEventListener('change', handleFileSelect);
+
+    // Modal resize
+    document.getElementById('btn-apply-resize')?.addEventListener('click', applyResize);
+
+    // Modales de importación
+    document.getElementById('btn-fit-canvas')?.addEventListener('click', () => drawImportedImage('fit'));
+    document.getElementById('btn-original-size')?.addEventListener('click', () => drawImportedImage('original'));
+    document.getElementById('btn-center')?.addEventListener('click', () => drawImportedImage('center'));
+}
+
+function draw(e: MouseEvent) {
+    ctx.lineWidth = state.brushSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (state.tool === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+    } else if (state.tool === 'brush') {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = state.color;
+    } else {
+        return;
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
+    [lastX, lastY] = [e.offsetX, e.offsetY];
+}
+
+// Zoom
+function changeZoom(delta: number) {
+    let newZoom = state.zoom + delta;
+    if (newZoom < 0.1) newZoom = 0.1;
+    if (newZoom > 5) newZoom = 5;
+    state.zoom = newZoom;
+    canvas.style.transform = `scale(${state.zoom})`;
+    canvas.style.transformOrigin = 'top left';
+    updateStatusBar();
+}
+
+function resetZoom() {
+    state.zoom = 1;
+    canvas.style.transform = 'scale(1)';
+    updateStatusBar();
+}
+
+// Capas
+function renderLayersList() {
+    const list = document.getElementById('layers-list')!;
+    list.innerHTML = '';
+    state.layers.forEach((layer, index) => {
+        const div = document.createElement('div');
+        div.className = `layer-item ${index === state.activeLayerIndex ? 'active' : ''}`;
+        div.innerHTML = `
+            <i class="ph ph-eye" style="margin-right:8px; opacity:${layer.visible ? 1 : 0.3}"></i>
+            <span class="layer-name">${layer.name}</span>
+        `;
+        div.addEventListener('click', () => {
+            state.activeLayerIndex = index;
+            renderLayersList();
+        });
+        list.appendChild(div);
+    });
+}
+
+function addLayer() {
+    state.layers.unshift({ name: `Capa ${state.layers.length + 1}`, visible: true });
+    state.activeLayerIndex = 0;
+    renderLayersList();
+}
+
+function deleteLayer() {
+    if (state.layers.length > 1) {
+        state.layers.splice(state.activeLayerIndex, 1);
+        state.activeLayerIndex = Math.max(0, state.activeLayerIndex - 1);
+        renderLayersList();
+    }
+}
+
+// Modales
+function openModal(id: string) {
+    document.getElementById(id)?.classList.remove('hidden');
+    if (id === 'resize-modal') {
+        (document.getElementById('resize-width') as HTMLInputElement).value = state.canvasWidth.toString();
+        (document.getElementById('resize-height') as HTMLInputElement).value = state.canvasHeight.toString();
+    }
+}
+
+function closeModal(id: string) {
+    document.getElementById(id)?.classList.add('hidden');
+}
+
+// Hacer disponible globalmente para onclick
+(window as any).closeModal = closeModal;
+
+function generateAnchorGrid() {
+    const grid = document.getElementById('anchor-grid')!;
+    grid.innerHTML = '';
+    for (let i = 0; i < 9; i++) {
+        const btn = document.createElement('div');
+        btn.className = 'anchor-btn';
+        if (i === 4) btn.classList.add('selected');
+        btn.addEventListener('click', () => {
+            grid.querySelectorAll('.anchor-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        });
+        grid.appendChild(btn);
+    }
+}
+
+function toggleTheme() {
+    document.body.classList.toggle('dark-theme');
+}
+
+function exportImage() {
+    const link = document.createElement('a');
+    link.download = 'error404-art.png';
+    link.href = canvas.toDataURL();
+    link.click();
+}
+
+function updateStatusBar() {
+    statusDimensions.textContent = `${state.canvasWidth} x ${state.canvasHeight} px`;
+    statusZoom.textContent = `${Math.round(state.zoom * 100)}%`;
+}
+
+// Importación de imágenes
+function handleFileSelect(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
-          const activeLayer = layerManager!.getActiveLayer();
-          if (activeLayer) {
-            // Resize canvas to match image if needed
-            if (img.width !== activeLayer.canvas.width || img.height !== activeLayer.canvas.height) {
-              activeLayer.canvas.width = img.width;
-              activeLayer.canvas.height = img.height;
-              document.getElementById('canvas-container')!.style.width = `${img.width}px`;
-              document.getElementById('canvas-container')!.style.height = `${img.height}px`;
-            }
-            
-            // Draw image on current layer
-            activeLayer.ctx.drawImage(img, 0, 0);
-          }
+            state.pendingImage = img;
+            openModal('import-modal');
         };
         img.src = event.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+    };
+    reader.readAsDataURL(file);
+    (e.target as HTMLInputElement).value = '';
+}
+
+function drawImportedImage(mode: string) {
+    if (!state.pendingImage) return;
+    const img = state.pendingImage;
+    ctx.globalCompositeOperation = 'source-over';
+    
+    let w = img.width, h = img.height, x = 0, y = 0;
+
+    if (mode === 'fit') {
+        const ratio = Math.min(canvas.width / w, canvas.height / h);
+        w *= ratio; h *= ratio;
+        x = (canvas.width - w) / 2;
+        y = (canvas.height - h) / 2;
+    } else if (mode === 'center') {
+        x = (canvas.width - w) / 2;
+        y = (canvas.height - h) / 2;
     }
+
+    ctx.drawImage(img, x, y, w, h);
+    closeModal('import-modal');
+    state.pendingImage = null;
+}
+
+function applyResize() {
+    const w = parseInt((document.getElementById('resize-width') as HTMLInputElement).value);
+    const h = parseInt((document.getElementById('resize-height') as HTMLInputElement).value);
     
-    // Reset input
-    input.value = '';
-  });
-  
-  // Save (Save to cloud)
-  document.getElementById('btnSave')!.addEventListener('click', async () => {
-    if (!layerManager) return;
-    
-    const user = authService.getCurrentUser();
-    if (!user) {
-      alert('Debes iniciar sesión para guardar proyectos.');
-      return;
-    }
-    
-    // Get user ID (handle different possible property names)
-    const userId = user._id || user.id;
-    if (!userId) {
-      alert('No se pudo identificar el usuario. Por favor inicia sesión nuevamente.');
-      return;
-    }
-    
-    const projectName = prompt('Nombre del proyecto:', `Mi Arte ${new Date().toLocaleDateString()}`);
-    if (!projectName) return;
-    
-    try {
-      // Get composite canvas with all layers
-      const compositeCanvas = layerManager.getCompositeCanvas();
-      
-      // Create full image data (Base64)
-      const imageData = compositeCanvas.toDataURL('image/png');
-      
-      // Create thumbnail (smaller version)
-      const thumbnailCanvas = document.createElement('canvas');
-      const thumbWidth = 300;
-      const thumbHeight = Math.round((compositeCanvas.height / compositeCanvas.width) * thumbWidth);
-      thumbnailCanvas.width = thumbWidth;
-      thumbnailCanvas.height = thumbHeight;
-      const thumbCtx = thumbnailCanvas.getContext('2d');
-      if (thumbCtx) {
-        thumbCtx.drawImage(compositeCanvas, 0, 0, thumbWidth, thumbHeight);
-      }
-      const thumbnailData = thumbnailCanvas.toDataURL('image/jpeg', 0.8);
-      
-      // Ask if public
-      const isPublic = confirm('¿Quieres compartir este proyecto públicamente en la galería de la comunidad?');
-      
-      // Send to backend
-      console.log('Enviando proyecto al backend...', {
-        user_id: userId,
-        name: projectName,
-        dataLength: imageData.length,
-        thumbnailLength: thumbnailData ? thumbnailData.length : 0,
-        is_public: isPublic
-      });
-      
-      const response = await fetch('http://localhost:3000/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          name: projectName,
-          data: imageData,
-          thumbnail: thumbnailData,
-          is_public: isPublic
-        })
-      });
-      
-      console.log('Respuesta del servidor:', response.status, response.statusText);
-      
-      // Manejar respuesta no JSON (como HTML de error)
-      const contentType = response.headers.get('content-type');
-      let result;
-      if (contentType && contentType.includes('application/json')) {
-        result = await response.json();
-      } else {
-        const text = await response.text();
-        console.error('Respuesta no JSON recibida:', text.substring(0, 500));
-        throw new Error(`El servidor respondió con ${response.status} ${response.statusText}. La imagen es demasiado grande o hay un problema de configuración.`);
-      }
-      
-      if (response.ok) {
-        currentProjectId = result.project?._id || result.project?.id;
-        // Guardar la imagen original para Pixel-Cop
-        originalImageData = imageData;
-        hayCambiosSinGuardar = false;
+    if (w > 0 && h > 0) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx?.drawImage(canvas, 0, 0);
+
+        canvas.width = w;
+        canvas.height = h;
+        state.canvasWidth = w;
+        state.canvasHeight = h;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(tempCanvas, (w - tempCanvas.width) / 2, (h - tempCanvas.height) / 2);
         
-        // Inicializar Pixel-Cop con la imagen guardada
-        if (pixelCop) {
-          pixelCop.setOriginalImageFromBase64(imageData);
-        }
-        
-        alert(`✅ ${result.mensaje}\n${isPublic ? '¡Tu proyecto ahora es visible en la galería de la comunidad!' : 'Proyecto guardado privadamente.'}`);
-      } else {
-        alert(`❌ Error: ${result.mensaje || 'Error al guardar el proyecto'}`);
-      }
-      
-    } catch (error) {
-      console.error('Error saving project:', error);
-      
-      let errorMessage = '❌ Error al guardar el proyecto.\n\n';
-      
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        errorMessage += 'No se pudo conectar con el servidor. Asegúrate de que:\n\n' +
-                       '1. El backend esté ejecutándose (npm run dev en backend/src)\n' +
-                       '2. MongoDB esté conectado\n' +
-                       '3. El servidor esté disponible en http://localhost:3000\n\n' +
-                       'Revisa la consola (F12) para más detalles.';
-      } else if (error instanceof Error) {
-        errorMessage += `Error: ${error.message}`;
-      } else {
-        errorMessage += 'Error desconocido. Revisa la consola (F12).';
-      }
-      
-      alert(errorMessage);
+        updateStatusBar();
+        closeModal('resize-modal');
     }
-  });
-  
-  // Selection tool buttons
-  const btnDeleteSelection = document.getElementById('btnDeleteSelection');
-  if (btnDeleteSelection) {
-    btnDeleteSelection.addEventListener('click', () => {
-      if (!layerManager || !drawingTools) return;
-      
-      const ctx = layerManager.getActiveCtx();
-      if (!ctx) return;
-      
-      drawingTools.clearSelection(ctx);
-      drawingTools.cancelSelection();
-      
-      // Hide selection options
-      const selectionOptions = document.getElementById('selectionOptions');
-      if (selectionOptions) {
-        selectionOptions.style.display = 'none';
-      }
-      
-      markCanvasChanged();
-      saveState(); // Save state after deleting selection
-    });
-  }
-  
-  const btnCancelSelection = document.getElementById('btnCancelSelection');
-  if (btnCancelSelection) {
-    btnCancelSelection.addEventListener('click', () => {
-      if (!drawingTools) return;
-      
-      drawingTools.cancelSelection();
-      
-      // Hide selection options
-      const selectionOptions = document.getElementById('selectionOptions');
-      if (selectionOptions) {
-        selectionOptions.style.display = 'none';
-      }
-    });
-  }
-  
-  // Undo/Redo buttons
-  const btnUndo = document.getElementById('btnUndo');
-  if (btnUndo) {
-    btnUndo.addEventListener('click', () => {
-      undo();
-    });
-  }
-  
-  const btnRedo = document.getElementById('btnRedo');
-  if (btnRedo) {
-    btnRedo.addEventListener('click', () => {
-      redo();
-    });
-  }
-  
-  // Zoom controls
-  const btnZoomIn = document.getElementById('btnZoomIn');
-  if (btnZoomIn) {
-    btnZoomIn.addEventListener('click', () => {
-      zoomIn();
-    });
-  }
-  
-  const btnZoomOut = document.getElementById('btnZoomOut');
-  if (btnZoomOut) {
-    btnZoomOut.addEventListener('click', () => {
-      zoomOut();
-    });
-  }
-  
-  const btnZoomReset = document.getElementById('btnZoomReset');
-  if (btnZoomReset) {
-    btnZoomReset.addEventListener('click', () => {
-      resetZoom();
-    });
-  }
-  
-  // Canvas Resize button
-  const btnResizeCanvas = document.getElementById('btnResizeCanvas');
-  if (btnResizeCanvas) {
-    btnResizeCanvas.addEventListener('click', () => {
-      if (!layerManager) return;
-      
-      const activeLayer = layerManager.getActiveLayer();
-      if (!activeLayer) return;
-      
-      const currentWidth = activeLayer.canvas.width;
-      const currentHeight = activeLayer.canvas.height;
-      
-      const newWidth = prompt('Nuevo ancho del lienzo (píxeles):', currentWidth.toString());
-      if (newWidth === null) return;
-      
-      const newHeight = prompt('Nuevo alto del lienzo (píxeles):', currentHeight.toString());
-      if (newHeight === null) return;
-      
-      const width = parseInt(newWidth, 10);
-      const height = parseInt(newHeight, 10);
-      
-      if (isNaN(width) || isNaN(height) || width <= 0 || height <= 0) {
-        alert('Por favor ingresa valores válidos.');
-        return;
-      }
-      
-      // Save state before resize
-      saveState();
-      
-      // Resize all layers
-      const container = document.getElementById('canvas-container');
-      if (container) {
-        container.style.width = `${width}px`;
-        container.style.height = `${height}px`;
-      }
-      
-      // Resize each layer
-      layerManager.resizeAllLayers(width, height);
-      
-      markCanvasChanged();
-      alert(`Lienzo redimensionado a ${width}x${height}px`);
-    });
-  }
-  
-  // Theme Toggle button
-  const btnToggleTheme = document.getElementById('btnToggleTheme');
-  if (btnToggleTheme) {
-    btnToggleTheme.addEventListener('click', () => {
-      document.body.classList.toggle('dark-theme');
-      // Save theme preference to localStorage
-      const isDark = document.body.classList.contains('dark-theme');
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    });
-    
-    // Load saved theme preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-      document.body.classList.add('dark-theme');
-    }
-  }
-  
-  // Tool button handler for showing/hiding selection options
-  const toolButtons = document.querySelectorAll('.tool-btn');
-  toolButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tool = (btn as HTMLElement).dataset.tool as ToolType;
-      
-      // Show/hide selection options based on tool
-      const selectionOptions = document.getElementById('selectionOptions');
-      if (selectionOptions) {
-        if (tool === 'selection' && drawingTools?.getSelectionBuffer()) {
-          selectionOptions.style.display = 'block';
-        } else {
-          selectionOptions.style.display = 'none';
-        }
-      }
-    });
-  });
-  
-  // Add link to community gallery
-  const menuGroup = document.querySelector('.menu-group')!;
-  const comunidadLink = document.createElement('a');
-  comunidadLink.href = '/comunidad.html';
-  comunidadLink.textContent = '🌐 Ver Comunidad';
-  comunidadLink.style.cssText = 'margin-left: 10px; padding: 5px 10px; background: #667eea; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;';
-  menuGroup.appendChild(comunidadLink);
-  
-  // Pixel-Cop: Botón de verificación de integridad
-  const btnVerifyIntegrity = document.getElementById('btnVerifyIntegrity');
-  if (btnVerifyIntegrity) {
-    btnVerifyIntegrity.addEventListener('click', async () => {
-      if (!pixelCop || !layerManager) {
-        alert('Pixel-Cop no está inicializado.');
-        return;
-      }
-      
-      // Verificar integridad
-      const report = pixelCop.verifyIntegrity();
-      
-      if (report.differentPixels === 0) {
-        alert(`🛡️ Pixel-Cop: ¡Integridad verificada! ${report.integrityPercentage}% de integridad.\nNo se detectaron modificaciones.`);
-      } else {
-        alert(`🛡️ Pixel-Cop: Se detectaron ${report.differentPixels} píxeles modificados.\nIntegridad: ${report.integrityPercentage}%\n\nResaltando píxeles modificados en rojo...`);
-        // Resaltar diferencias
-        await pixelCop.highlightDifferences('rgba(255, 0, 0, 0.5)', 3000);
-      }
-    });
-  }
-  
-  // Export
-  document.getElementById('btnExport')!.addEventListener('click', () => {
-    if (!layerManager) return;
-    
-    const format = (document.getElementById('exportFormat') as HTMLSelectElement).value as 'png' | 'jpg' | 'gif';
-    const compositeCanvas = layerManager.getCompositeCanvas();
-    
-    let dataURL: string;
-    if (format === 'jpg') {
-      dataURL = compositeCanvas.toDataURL('image/jpeg', 0.95);
-    } else if (format === 'gif') {
-      // GIF export - we'll export as PNG since canvas doesn't support GIF natively
-      dataURL = compositeCanvas.toDataURL('image/png');
-      alert('Nota: El formato GIF se exportará como PNG. Para GIF animado, se requiere una librería adicional.');
-    } else {
-      dataURL = compositeCanvas.toDataURL('image/png');
-    }
-    
-    // Create download link
-    const link = document.createElement('a');
-    link.download = `pixelart-${Date.now()}.${format === 'gif' ? 'png' : format}`;
-    link.href = dataURL;
-    link.click();
-  });
 }
-
-// Setup layers panel
-function setupLayersPanel(): void {
-  if (!layerManager) return;
-  
-  // Add layer
-  document.getElementById('btnAddLayer')!.addEventListener('click', () => {
-    layerManager!.createLayer();
-    markCanvasChanged();
-  });
-  
-  // Delete layer
-  document.getElementById('btnDeleteLayer')!.addEventListener('click', () => {
-    const activeLayer = layerManager!.getActiveLayer();
-    if (activeLayer) {
-      if (!layerManager!.deleteLayer(activeLayer.id)) {
-        alert('No se puede eliminar la única capa restante.');
-      } else {
-        markCanvasChanged();
-      }
-    }
-  });
-  
-  // Merge down
-  document.getElementById('btnMergeDown')!.addEventListener('click', () => {
-    const activeLayer = layerManager!.getActiveLayer();
-    if (activeLayer) {
-      if (!layerManager!.mergeDown(activeLayer.id)) {
-        alert('No hay capa debajo para fusionar.');
-      } else {
-        markCanvasChanged();
-      }
-    }
-  });
-}
-
-// Save a new project to the cloud
-async function saveNewProject(userId: string, projectName: string): Promise<void> {
-  if (!layerManager) return;
-  
-  try {
-    // Get composite canvas with all layers
-    const compositeCanvas = layerManager.getCompositeCanvas();
-    
-    // Create full image data (Base64)
-    const imageData = compositeCanvas.toDataURL('image/png');
-    
-    // Create thumbnail (smaller version)
-    const thumbnailCanvas = document.createElement('canvas');
-    const thumbWidth = 300;
-    const thumbHeight = Math.round((compositeCanvas.height / compositeCanvas.width) * thumbWidth);
-    thumbnailCanvas.width = thumbWidth;
-    thumbnailCanvas.height = thumbHeight;
-    const thumbCtx = thumbnailCanvas.getContext('2d');
-    if (thumbCtx) {
-      thumbCtx.drawImage(compositeCanvas, 0, 0, thumbWidth, thumbHeight);
-    }
-    const thumbnailData = thumbnailCanvas.toDataURL('image/jpeg', 0.8);
-    
-    // Ask if public
-    const isPublic = confirm('¿Quieres compartir este proyecto públicamente en la galería de la comunidad?');
-    
-    // Send to backend
-    const response = await fetch('http://localhost:3000/api/projects', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        name: projectName,
-        data: imageData,
-        thumbnail: thumbnailData,
-        is_public: isPublic
-      })
-    });
-    
-    const result = await response.json();
-    
-    if (response.ok) {
-      currentProjectId = result.project?._id || result.project?.id;
-      hayCambiosSinGuardar = false;
-      alert(`✅ ${result.mensaje}\n${isPublic ? '¡Tu proyecto ahora es visible en la galería de la comunidad!' : 'Proyecto guardado privadamente.'}`);
-    } else {
-      alert(`❌ Error: ${result.mensaje || 'Error al guardar el proyecto'}`);
-    }
-    
-  } catch (error) {
-    console.error('Error saving project:', error);
-    alert('❌ Error de conexión. Asegúrate de que el backend esté ejecutándose en http://localhost:3000');
-  }
-}
-
-// Save existing project to cloud (for auto-save)
-async function saveProjectToCloud(projectId: string): Promise<void> {
-  if (!layerManager) return;
-  
-  try {
-    const compositeCanvas = layerManager.getCompositeCanvas();
-    const imageData = compositeCanvas.toDataURL('image/png');
-    
-    const response = await fetch(`http://localhost:3000/api/projects/${projectId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        data: imageData,
-        updated_at: Date.now()
-      })
-    });
-    
-    if (response.ok) {
-      console.log('Auto-guardado completado');
-    } else {
-      console.error('Error en auto-guardado');
-    }
-  } catch (error) {
-    console.error('Error en auto-guardado:', error);
-  }
-}
-
-// Start the app
-init();
