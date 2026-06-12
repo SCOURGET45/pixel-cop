@@ -86,6 +86,115 @@ function setupNavigation(): void {
 // Check if user is logged in
 function checkAuth(): void {
   updateNavForAuth();
+  setupAuthForms();
+}
+
+// Setup authentication forms (login/register)
+function setupAuthForms(): void {
+  const loginForm = document.getElementById('loginForm') as HTMLFormElement;
+  const registerForm = document.getElementById('registerForm') as HTMLFormElement;
+  const showRegisterLink = document.getElementById('showRegister');
+  const showLoginLink = document.getElementById('showLogin');
+  const loginFormDiv = document.getElementById('login-form');
+  const registerFormDiv = document.getElementById('register-form');
+  const authContainer = document.getElementById('auth-container');
+  const appContainer = document.getElementById('app-container');
+
+  // Toggle between login and register forms
+  if (showRegisterLink && loginFormDiv && registerFormDiv) {
+    showRegisterLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      loginFormDiv.classList.add('hidden');
+      registerFormDiv.classList.remove('hidden');
+    });
+  }
+
+  if (showLoginLink && loginFormDiv && registerFormDiv) {
+    showLoginLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      registerFormDiv.classList.add('hidden');
+      loginFormDiv.classList.remove('hidden');
+    });
+  }
+
+  // Handle login form submission
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const usuarioInput = document.getElementById('loginUsuario') as HTMLInputElement;
+      const passwordInput = document.getElementById('loginPassword') as HTMLInputElement;
+      
+      const result = await authService.login(usuarioInput.value, passwordInput.value);
+      
+      if (result.success) {
+        alert(result.message);
+        updateAuthUI(true);
+      } else {
+        alert(result.message);
+      }
+    });
+  }
+
+  // Handle register form submission
+  if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nombreInput = document.getElementById('regNombre') as HTMLInputElement;
+      const usuarioInput = document.getElementById('regUsuario') as HTMLInputElement;
+      const correoInput = document.getElementById('regCorreo') as HTMLInputElement;
+      const passwordInput = document.getElementById('regPassword') as HTMLInputElement;
+      
+      const result = await authService.register({
+        Nombre: nombreInput.value,
+        Usuario: usuarioInput.value,
+        correo: correoInput.value,
+        password: passwordInput.value
+      });
+      
+      if (result.success) {
+        alert(result.message);
+        // Switch to login form after successful registration
+        if (loginFormDiv && registerFormDiv) {
+          registerFormDiv.classList.add('hidden');
+          loginFormDiv.classList.remove('hidden');
+        }
+      } else {
+        alert(result.message);
+      }
+    });
+  }
+
+  // Initial UI update
+  updateAuthUI(authService.isLoggedIn());
+}
+
+// Update UI based on authentication status
+function updateAuthUI(isLoggedIn: boolean): void {
+  const authContainer = document.getElementById('auth-container');
+  const appContainer = document.getElementById('app-container');
+  const userDisplay = document.getElementById('user-display');
+  const currentUser = authService.getCurrentUser();
+
+  if (isLoggedIn && authContainer && appContainer) {
+    authContainer.classList.add('hidden');
+    appContainer.classList.remove('hidden');
+    
+    if (userDisplay && currentUser) {
+      userDisplay.textContent = `👤 ${currentUser.Usuario}`;
+    }
+    
+    // Initialize the app if not already done
+    if (!isAppInitialized) {
+      initializeApp();
+    }
+  } else if (!isLoggedIn && authContainer && appContainer) {
+    authContainer.classList.remove('hidden');
+    appContainer.classList.add('hidden');
+    
+    if (userDisplay) {
+      userDisplay.textContent = '';
+    }
+  }
 }
 
 // Update navigation based on auth status
