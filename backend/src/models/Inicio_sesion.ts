@@ -56,7 +56,8 @@ const InicioSesionSchema = new mongoose.Schema<IUser>({
 
 },
 {
-  timestamps: true
+  timestamps: true,
+  collection: 'iniciosesions'
 });
 
 export default mongoose.model("InicioSesion", InicioSesionSchema);
