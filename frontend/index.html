@@ -63,36 +63,42 @@
       <div class="workspace">
         <!-- Left Toolbar -->
         <aside class="toolbar">
-          <h3>Herramientas</h3>
-          <button class="tool-btn active" data-tool="brush" title="Pincel">🖌️</button>
-          <button class="tool-btn" data-tool="eraser" title="Goma">🧽</button>
-          <button class="tool-btn" data-tool="fill" title="Relleno">🪣</button>
-          <button class="tool-btn" data-tool="picker" title="Selector de color">💉</button>
-          <button class="tool-btn" data-tool="selection" title="Selección">⬚</button>
+          <!-- Herramientas Principales (siempre visibles) -->
+          <div class="tool-section">
+            <h3>🛠️ Herramientas</h3>
+            <div class="tools-grid">
+              <button class="tool-btn active" data-tool="brush" title="Pincel (B)">🖌️</button>
+              <button class="tool-btn" data-tool="eraser" title="Goma (E)">🧽</button>
+              <button class="tool-btn" data-tool="fill" title="Relleno (G)">🪣</button>
+              <button class="tool-btn" data-tool="picker" title="Selector (I)">💉</button>
+              <button class="tool-btn" data-tool="selection" title="Selección (M)">⬚</button>
+            </div>
+          </div>
           
+          <!-- Opciones de Selección (solo visible cuando se usa selección) -->
           <div class="tool-options" id="selectionOptions" style="display: none;">
-            <button id="btnDeleteSelection" title="Borrar selección">🗑️ Borrar Área</button>
+            <button id="btnDeleteSelection" title="Borrar selección">🗑️ Borrar</button>
             <button id="btnCancelSelection" title="Cancelar selección">❌ Cancelar</button>
           </div>
           
-          <!-- Brush Options (collapsed by default, expands when brush is selected) -->
-          <div class="tool-options brush-options" id="brushOptions">
-            <label>🖌️ Pincel</label>
-            <select id="brushType" title="Tipo de pincel">
-              <option value="round">Redondo</option>
-              <option value="square">Cuadrado</option>
-              <option value="spray">Spray</option>
-              <option value="pencil">Lápiz</option>
-              <option value="marker">Marcador</option>
-            </select>
-            <label>Tamaño:</label>
-            <input type="range" id="brushSize" min="1" max="50" value="5" />
-            <span id="brushSizeValue">5px</span>
-            
-            <!-- Color Picker inside Brush Options -->
-            <details class="color-details">
-              <summary>🎨 Color</summary>
-              <div class="color-content">
+          <!-- Opciones del Pincel/Goma (desplegable) -->
+          <details class="tool-details" id="brushDetails" open>
+            <summary class="tool-summary">🖌️ Pincel</summary>
+            <div class="tool-content">
+              <label>Tipo:</label>
+              <select id="brushType" title="Tipo de pincel">
+                <option value="round">Redondo</option>
+                <option value="square">Cuadrado</option>
+                <option value="spray">Spray</option>
+                <option value="pencil">Lápiz</option>
+                <option value="marker">Marcador</option>
+              </select>
+              <label>Tamaño: <span id="brushSizeValue">5px</span></label>
+              <input type="range" id="brushSize" min="1" max="50" value="5" />
+              
+              <!-- Color Picker -->
+              <div class="color-picker-section">
+                <label>🎨 Color:</label>
                 <input type="color" id="colorPicker" value="#000000" />
                 <div class="color-presets">
                   <span class="preset-color" data-color="#000000"></span>
@@ -109,35 +115,32 @@
                   <span class="preset-color" data-color="#008000"></span>
                 </div>
               </div>
-            </details>
+            </div>
+          </details>
+          
+          <!-- Acciones Rápidas (siempre visibles) -->
+          <div class="tool-section">
+            <h3>⚡ Acciones</h3>
+            <div class="actions-grid">
+              <button id="btnUndo" title="Deshacer (Ctrl+Z)">↩️</button>
+              <button id="btnRedo" title="Rehacer (Ctrl+Y)">↪️</button>
+              <button id="btnZoomOut" title="Alejar (-)">➖</button>
+              <button id="btnZoomIn" title="Acercar (+)">➕</button>
+            </div>
+            <div class="zoom-info">
+              <span id="zoomValue">100%</span>
+              <button id="btnZoomReset" title="Resetear zoom (0)" style="font-size: 12px; padding: 2px 6px;">🔄</button>
+            </div>
           </div>
           
-          <!-- Undo/Redo Controls -->
-          <div class="tool-options">
-            <label>Historial:</label>
-            <button id="btnUndo" title="Deshacer (Ctrl+Z)">↩️</button>
-            <button id="btnRedo" title="Rehacer (Ctrl+Y)">↪️</button>
-          </div>
-          
-          <!-- Zoom Controls -->
-          <div class="tool-options">
-            <label>Zoom:</label>
-            <button id="btnZoomOut" title="Alejar">➖</button>
-            <span id="zoomValue">100%</span>
-            <button id="btnZoomIn" title="Acercar">➕</button>
-            <button id="btnZoomReset" title="Resetear zoom">🔄</button>
-          </div>
-          
-          <!-- Canvas Resize Options -->
-          <div class="tool-options">
-            <label>📐 Lienzo</label>
-            <button id="btnResizeCanvas" title="Cambiar tamaño del lienzo">✂️ Redimensionar</button>
-          </div>
-          
-          <!-- Theme Toggle -->
-          <div class="tool-options">
-            <button id="btnToggleTheme" title="Cambiar tema claro/oscuro">🌓 Tema</button>
-          </div>
+          <!-- Herramientas Avanzadas (desplegable) -->
+          <details class="tool-details">
+            <summary class="tool-summary">📐 Avanzadas</summary>
+            <div class="tool-content">
+              <button id="btnResizeCanvas" title="Cambiar tamaño del lienzo" style="width: 100%;">✂️ Redimensionar Lienzo</button>
+              <button id="btnToggleTheme" title="Cambiar tema claro/oscuro" style="width: 100%;">🌓 Cambiar Tema</button>
+            </div>
+          </details>
         </aside>
 
         <!-- Canvas Area -->

@@ -201,28 +201,64 @@ body {
   width: var(--toolbar-width);
   background: var(--surface);
   border-right: 1px solid var(--border);
-  padding: 16px 8px;
+  padding: 12px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: calc(100vh - var(--menu-height));
 }
 
 .toolbar h3 {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+/* Tool Section */
+.tool-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
+.tools-grid, .actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+.zoom-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+#zoomValue {
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--text);
+  min-width: 40px;
+  text-align: center;
+}
+
 .tool-btn {
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   border: 2px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
-  font-size: 24px;
+  font-size: 20px;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -246,7 +282,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
 .tool-options label {
@@ -286,73 +322,103 @@ body {
   border-color: var(--primary);
 }
 
-/* Color Details (Collapsible) */
-details.color-details {
+/* Tool Details (Collapsible sections) */
+.tool-details {
   width: 100%;
-  margin-top: 8px;
+  margin-top: 4px;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
-details.color-details summary {
+.tool-summary {
   cursor: pointer;
-  font-size: 12px;
-  color: var(--text-muted);
-  padding: 4px;
-  border-radius: 4px;
-  transition: background 0.2s;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  padding: 8px 6px;
+  background: var(--bg);
+  border-radius: 6px;
+  transition: all 0.2s;
   list-style: none;
+  text-align: center;
 }
 
-details.color-details summary::-webkit-details-marker {
+.tool-summary::-webkit-details-marker {
   display: none;
 }
 
-details.color-details summary:hover {
-  background: var(--bg);
+.tool-summary:hover {
+  background: var(--primary);
+  color: white;
 }
 
-details.color-details[open] summary {
-  background: var(--bg);
-  color: var(--primary);
+.tool-details[open] .tool-summary {
+  background: var(--primary);
+  color: white;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
-.color-content {
-  padding: 8px 0;
+.tool-content {
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
 }
 
-#brushSizeValue {
-  font-size: 12px;
+.color-picker-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.color-picker-section label {
+  font-size: 11px;
   color: var(--text-muted);
 }
 
-.color-content #colorPicker {
-  width: 48px;
-  height: 48px;
+#brushSizeValue {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.tool-content #colorPicker {
+  width: 40px;
+  height: 40px;
   border: 2px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   padding: 0;
 }
 
-.color-content .color-presets {
+.tool-content .color-presets {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 4px;
 }
 
-.color-content .preset-color {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
+.tool-content .preset-color {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
   cursor: pointer;
   border: 1px solid var(--border);
   transition: transform 0.2s;
 }
 
-.color-content .preset-color:hover {
+.tool-content .preset-color:hover {
   transform: scale(1.2);
 }
 
