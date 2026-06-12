@@ -64,17 +64,43 @@ class AuthService {
 
   async register(userData: Omit<User, '_id'>): Promise<AuthResult> {
     try {
+      // Validaciones básicas antes de enviar
+      if (!userData.Nombre || userData.Nombre.trim().length === 0) {
+        return {
+          success: false,
+          message: 'El nombre es requerido',
+        };
+      }
+      if (!userData.Usuario || userData.Usuario.trim().length < 3) {
+        return {
+          success: false,
+          message: 'El usuario debe tener al menos 3 caracteres',
+        };
+      }
+      if (!userData.correo || !userData.correo.includes('@')) {
+        return {
+          success: false,
+          message: 'Ingresa un correo válido',
+        };
+      }
+      if (!userData.password || userData.password.length < 6) {
+        return {
+          success: false,
+          message: 'La contraseña debe tener al menos 6 caracteres',
+        };
+      }
+
       const response = await fetch(`${this.API_URL}/inicio-sesion/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          Nombre: userData.Nombre,
-          Usuario: userData.Usuario,
-          correo: userData.correo,
+          Nombre: userData.Nombre.trim(),
+          Usuario: userData.Usuario.trim(),
+          correo: userData.correo.trim(),
           password: userData.password,
-          idUsuario: userData.Usuario.toLowerCase().replace(/\s/g, ''),
+          idUsuario: userData.Usuario.toLowerCase().replace(/\s/g, '').substring(0, 30),
           imgPerfil: ''
         }),
       });
@@ -96,7 +122,7 @@ class AuthService {
       console.error('Error en registro:', error);
       return {
         success: false,
-        message: 'Error de conexión con el servidor',
+        message: 'Error de conexión con el servidor. Asegúrate de que el backend esté corriendo.',
       };
     }
   }

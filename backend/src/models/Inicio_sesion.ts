@@ -15,7 +15,8 @@ const InicioSesionSchema = new mongoose.Schema<IUser>({
 
   idUsuario: {
     type: String,
-    match: /^[a-zA-Z0-9]+$/ // solo letras y números
+    trim: true,
+    maxlength: 30
   },
 
   Nombre: {
@@ -32,8 +33,9 @@ const InicioSesionSchema = new mongoose.Schema<IUser>({
 
   password: {
     type: String,
-    requiered: true,
-    match: /^[A-Z0-9-]+$/ // letras, números y guiones
+    required: true,
+    minlength: 6,
+    maxlength: 50
   },
    
   correo: {
