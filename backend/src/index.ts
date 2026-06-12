@@ -79,7 +79,7 @@ app.use("/api/pixel-cop", pixelCopRouter);
 
 // Health check
 app.get("/", (req, res) => {
-    res.send("API de PixelArt Studio funcionando");
+    res.send("API de Error404 Studio funcionando");
 });
 
 // Start server
