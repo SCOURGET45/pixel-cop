@@ -1,28 +1,45 @@
 :root {
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --bg: #f8fafc;
-  --surface: #ffffff;
-  --border: #e2e8f0;
-  --text: #1e293b;
-  --text-muted: #64748b;
+  --primary: #7c3aed;
+  --primary-hover: #8b5cf6;
+  --bg-dark: #1a1a1a;
+  --bg-panel: #252525;
+  --bg-hover: #333333;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --border: #404040;
+  --icon-color: #b0b0b0;
+  --icon-active: #7c3aed;
   --danger: #ef4444;
   --success: #22c55e;
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --radius: 4px;
   
-  --toolbar-width: 80px;
+  --toolbar-width: 280px;
   --layers-width: 250px;
   --menu-height: 50px;
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
-/* Dark Theme */
+/* Light Theme */
+body:not(.dark-theme) {
+  --bg-dark: #f5f5f5;
+  --bg-panel: #ffffff;
+  --bg-hover: #f0f0f0;
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --border: #e0e0e0;
+  --icon-color: #666666;
+}
+
 body.dark-theme {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --border: #334155;
-  --text: #f1f5f9;
-  --text-muted: #94a3b8;
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --bg-dark: #1a1a1a;
+  --bg-panel: #252525;
+  --bg-hover: #333333;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --border: #404040;
+  --icon-color: #b0b0b0;
 }
 
 body.dark-theme .canvas-area {
@@ -312,28 +329,60 @@ body {
   width: 52px;
   height: 52px;
   border: 2px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  font-size: 24px;
+  border-radius: var(--radius);
+  background: var(--bg-panel);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--icon-color);
 }
 
 .tool-btn:hover {
   border-color: var(--primary);
-  background: var(--bg);
+  background: var(--bg-hover);
+  color: var(--icon-active);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 8px rgba(124, 58, 237, 0.2);
 }
 
 .tool-btn.active {
   border-color: var(--primary);
-  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  background: var(--primary);
   color: white;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
+}
+
+.tool-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.action-btn {
+  width: 52px;
+  height: 52px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--icon-color);
+}
+
+.action-btn:hover {
+  border-color: var(--primary);
+  background: var(--bg-hover);
+  color: var(--icon-active);
+  transform: translateY(-2px);
+}
+
+.action-btn svg {
+  width: 24px;
+  height: 24px;
 }
 
 .tool-options {
@@ -390,19 +439,19 @@ body {
 .tool-details {
   width: 100%;
   margin-top: 4px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   overflow: hidden;
-  background: var(--bg);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
 }
 
 .tool-summary {
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text);
-  padding: 12px 14px;
+  color: var(--text-primary);
+  padding: 10px 12px;
   background: transparent;
-  border-radius: 8px;
   transition: all 0.2s;
   list-style: none;
   text-align: left;
@@ -412,10 +461,17 @@ body {
   gap: 8px;
 }
 
+.tool-summary svg {
+  width: 16px;
+  height: 16px;
+  color: var(--icon-color);
+}
+
 .tool-summary::after {
   content: '▼';
-  font-size: 10px;
+  font-size: 9px;
   transition: transform 0.2s;
+  color: var(--text-secondary);
 }
 
 .tool-details[open] .tool-summary::after {
@@ -427,8 +483,7 @@ body {
 }
 
 .tool-summary:hover {
-  background: rgba(99, 102, 241, 0.1);
-  color: var(--primary);
+  background: var(--bg-hover);
 }
 
 .tool-details[open] .tool-summary {
@@ -436,6 +491,14 @@ body {
   color: white;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
+}
+
+.tool-details[open] .tool-summary svg {
+  color: white;
+}
+
+.tool-details[open] .tool-summary::after {
+  color: white;
 }
 
 .tool-details[open] .tool-summary:hover {
@@ -546,12 +609,49 @@ body {
 /* ==================== CANVAS AREA ==================== */
 .canvas-area {
   flex: 1;
-  background: #e5e5e5;
+  background: var(--bg-dark);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.canvas-wrapper {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: auto;
   padding: 40px;
+}
+
+/* Status Bar */
+.status-bar {
+  height: 28px;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-divider {
+  color: var(--border);
+  font-weight: bold;
+}
+
+#canvasSize, #statusZoom, #currentTool, #mouseX, #mouseY {
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 body.dark-theme .canvas-area {

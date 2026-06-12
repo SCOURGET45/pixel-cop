@@ -86,25 +86,73 @@
         <aside class="toolbar">
           <!-- Herramientas Principales (siempre visibles) -->
           <div class="tool-section">
-            <h3>🛠️ Herramientas</h3>
+            <h3>Herramientas</h3>
             <div class="tools-grid">
-              <button class="tool-btn active" data-tool="brush" title="Pincel (B)">🖌️</button>
-              <button class="tool-btn" data-tool="eraser" title="Goma (E)">🧽</button>
-              <button class="tool-btn" data-tool="fill" title="Relleno (G)">🪣</button>
-              <button class="tool-btn" data-tool="picker" title="Selector (I)">💉</button>
-              <button class="tool-btn" data-tool="selection" title="Selección (M)">⬚</button>
+              <button class="tool-btn active" data-tool="brush" title="Pincel (B)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                  <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                  <path d="M2 2l7.586 7.586"/>
+                  <circle cx="11" cy="11" r="2"/>
+                </svg>
+              </button>
+              <button class="tool-btn" data-tool="eraser" title="Goma (E)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M20 20H7L3 16V7l5-5h10l4 4v10l-4 4z"/>
+                  <path d="M12 7l5 5"/>
+                </svg>
+              </button>
+              <button class="tool-btn" data-tool="fill" title="Relleno (G)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M19 11l-8-8-8.6 8.6a2 2 0 000 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11z"/>
+                  <path d="M5 2l5 5"/>
+                  <path d="M13 7l4 4"/>
+                </svg>
+              </button>
+              <button class="tool-btn" data-tool="picker" title="Selector (I)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M12 2L2 22h20L12 2z"/>
+                  <circle cx="12" cy="14" r="3"/>
+                </svg>
+              </button>
+              <button class="tool-btn" data-tool="selection" title="Selección (M)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <circle cx="15.5" cy="8.5" r="1.5"/>
+                  <circle cx="8.5" cy="15.5" r="1.5"/>
+                  <circle cx="15.5" cy="15.5" r="1.5"/>
+                </svg>
+              </button>
             </div>
           </div>
           
           <!-- Opciones de Selección (solo visible cuando se usa selección) -->
           <div class="tool-options" id="selectionOptions" style="display: none;">
-            <button id="btnDeleteSelection" title="Borrar selección">🗑️ Borrar</button>
-            <button id="btnCancelSelection" title="Cancelar selección">❌ Cancelar</button>
+            <button id="btnDeleteSelection" title="Borrar selección">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+              </svg>
+              Borrar
+            </button>
+            <button id="btnCancelSelection" title="Cancelar selección">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M15 9l-6 6M9 9l6 6"/>
+              </svg>
+              Cancelar
+            </button>
           </div>
           
           <!-- Opciones del Pincel/Goma (desplegable) -->
           <details class="tool-details" id="brushDetails" open>
-            <summary class="tool-summary">🖌️ Pincel</summary>
+            <summary class="tool-summary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+              </svg>
+              Pincel
+            </summary>
             <div class="tool-content">
               <label>Tipo:</label>
               <select id="brushType" title="Tipo de pincel">
@@ -119,7 +167,7 @@
               
               <!-- Color Picker -->
               <div class="color-picker-section">
-                <label>🎨 Color:</label>
+                <label>Color:</label>
                 <input type="color" id="colorPicker" value="#000000" />
                 <div class="color-presets">
                   <span class="preset-color" data-color="#000000"></span>
@@ -141,25 +189,69 @@
           
           <!-- Acciones Rápidas (siempre visibles) -->
           <div class="tool-section">
-            <h3>⚡ Acciones</h3>
+            <h3>Acciones</h3>
             <div class="actions-grid">
-              <button id="btnUndo" title="Deshacer (Ctrl+Z)">↩️</button>
-              <button id="btnRedo" title="Rehacer (Ctrl+Y)">↪️</button>
-              <button id="btnZoomOut" title="Alejar (-)">➖</button>
-              <button id="btnZoomIn" title="Acercar (+)">➕</button>
+              <button id="btnUndo" title="Deshacer (Ctrl+Z)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M3 10h10a5 5 0 015 5v2"/>
+                  <path d="M7 6L3 10l4 4"/>
+                </svg>
+              </button>
+              <button id="btnRedo" title="Rehacer (Ctrl+Y)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 10H11a5 5 0 00-5 5v2"/>
+                  <path d="M17 6l4 4-4 4"/>
+                </svg>
+              </button>
+              <button id="btnZoomOut" title="Alejar (-)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="M21 21l-4.35-4.35"/>
+                  <path d="M8 11h6"/>
+                </svg>
+              </button>
+              <button id="btnZoomIn" title="Acercar (+)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="M21 21l-4.35-4.35"/>
+                  <path d="M11 8v6M8 11h6"/>
+                </svg>
+              </button>
             </div>
             <div class="zoom-info">
               <span id="zoomValue">100%</span>
-              <button id="btnZoomReset" title="Resetear zoom (0)" style="font-size: 12px; padding: 2px 6px;">🔄</button>
+              <button id="btnZoomReset" title="Resetear zoom (0)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/>
+                  <path d="M3 3v5h5"/>
+                </svg>
+              </button>
             </div>
           </div>
           
           <!-- Herramientas Avanzadas (desplegable) -->
           <details class="tool-details">
-            <summary class="tool-summary">📐 Avanzadas</summary>
+            <summary class="tool-summary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+              </svg>
+              Avanzadas
+            </summary>
             <div class="tool-content">
-              <button id="btnResizeCanvas" title="Cambiar tamaño del lienzo" style="width: 100%;">✂️ Redimensionar Lienzo</button>
-              <button id="btnToggleTheme" title="Cambiar tema claro/oscuro" style="width: 100%;">🌓 Cambiar Tema</button>
+              <button id="btnResizeCanvas" title="Cambiar tamaño del lienzo" style="width: 100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                </svg>
+                Redimensionar Lienzo
+              </button>
+              <button id="btnToggleTheme" title="Cambiar tema claro/oscuro" style="width: 100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="5"/>
+                  <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>
+                Cambiar Tema
+              </button>
             </div>
           </details>
         </aside>
