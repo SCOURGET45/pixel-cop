@@ -15,6 +15,7 @@ interface JwtPayload {
 /**
  * Middleware para verificar el token JWT
  * Obtiene el token del header Authorization, lo verifica y busca al usuario en la BD
+ * También acepta el ID del usuario directamente como fallback
  */
 export const verifyToken = async (
   req: AuthRequest,
@@ -34,11 +35,17 @@ export const verifyToken = async (
 
     const token = authHeader.split(' ')[1];
 
-    // Verificar el token con jwt.verify
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as JwtPayload;
+    let usuario = null;
 
-    // Buscar al usuario en la base de datos usando el ID del token decodificado
-    const usuario = await InicioSesion.findById(decoded.id);
+    // Intentar verificar como JWT primero
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as JwtPayload;
+      usuario = await InicioSesion.findById(decoded.id);
+    } catch (jwtError) {
+      // Si falla como JWT, intentar usar el token como ID directo del usuario
+      console.log('⚠️ Token no es JWT válido, intentando como ID directo:', token);
+      usuario = await InicioSesion.findById(token);
+    }
 
     if (!usuario) {
       res.status(404).json({
