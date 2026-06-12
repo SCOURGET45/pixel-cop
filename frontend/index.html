@@ -1,13 +1,115 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>PixelArt Studio</title>
   </head>
   <body>
-    <div id="app"></div>
+    <!-- Login/Register Container -->
+    <div id="auth-container" class="auth-container">
+      <div id="login-form" class="auth-form">
+        <h2>Iniciar Sesión</h2>
+        <form id="loginForm">
+          <input type="text" id="loginUsuario" placeholder="Usuario" required />
+          <input type="password" id="loginPassword" placeholder="Contraseña" required />
+          <button type="submit">Entrar</button>
+        </form>
+        <p>¿No tienes cuenta? <a href="#" id="showRegister">Regístrate</a></p>
+      </div>
+      
+      <div id="register-form" class="auth-form hidden">
+        <h2>Registro</h2>
+        <form id="registerForm">
+          <input type="text" id="regNombre" placeholder="Nombre completo" required />
+          <input type="text" id="regUsuario" placeholder="Usuario" required />
+          <input type="email" id="regCorreo" placeholder="Correo electrónico" required />
+          <input type="password" id="regPassword" placeholder="Contraseña" required />
+          <button type="submit">Registrarse</button>
+        </form>
+        <p>¿Ya tienes cuenta? <a href="#" id="showLogin">Inicia sesión</a></p>
+      </div>
+    </div>
+
+    <!-- Main App Container (hidden until logged in) -->
+    <div id="app-container" class="app-container hidden">
+      <!-- Top Menu Bar -->
+      <header class="menu-bar">
+        <div class="menu-group">
+          <button id="btnNew">Nuevo</button>
+          <button id="btnOpen">Abrir</button>
+          <button id="btnSave">Guardar</button>
+          <button id="btnExport">Exportar</button>
+          <select id="exportFormat">
+            <option value="png">PNG</option>
+            <option value="jpg">JPG</option>
+            <option value="gif">GIF</option>
+          </select>
+        </div>
+        <div class="menu-group">
+          <span id="user-display"></span>
+          <button id="btnLogout">Cerrar Sesión</button>
+        </div>
+      </header>
+
+      <!-- Main Workspace -->
+      <div class="workspace">
+        <!-- Left Toolbar -->
+        <aside class="toolbar">
+          <h3>Herramientas</h3>
+          <button class="tool-btn active" data-tool="brush" title="Pincel">🖌️</button>
+          <button class="tool-btn" data-tool="eraser" title="Goma">🧹</button>
+          <button class="tool-btn" data-tool="fill" title="Relleno">🪣</button>
+          <button class="tool-btn" data-tool="picker" title="Selector de color">💉</button>
+          
+          <div class="tool-options">
+            <label>Tamaño:</label>
+            <input type="range" id="brushSize" min="1" max="50" value="5" />
+            <span id="brushSizeValue">5px</span>
+          </div>
+          
+          <div class="color-picker">
+            <label>Color:</label>
+            <input type="color" id="colorPicker" value="#000000" />
+            <div class="color-presets">
+              <span class="preset-color" data-color="#000000"></span>
+              <span class="preset-color" data-color="#ffffff"></span>
+              <span class="preset-color" data-color="#ff0000"></span>
+              <span class="preset-color" data-color="#00ff00"></span>
+              <span class="preset-color" data-color="#0000ff"></span>
+              <span class="preset-color" data-color="#ffff00"></span>
+              <span class="preset-color" data-color="#ff00ff"></span>
+              <span class="preset-color" data-color="#00ffff"></span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Canvas Area -->
+        <main class="canvas-area">
+          <div id="canvas-container" class="canvas-container">
+            <!-- Layers will be created here dynamically -->
+          </div>
+        </main>
+
+        <!-- Right Panel - Layers -->
+        <aside class="layers-panel">
+          <h3>Capas</h3>
+          <div class="layers-controls">
+            <button id="btnAddLayer">➕ Nueva</button>
+            <button id="btnDeleteLayer">🗑️ Eliminar</button>
+            <button id="btnMergeDown">⬇️ Fusionar</button>
+          </div>
+          <div id="layers-list" class="layers-list">
+            <!-- Layer items will be added here -->
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="fileInput" accept="image/*" style="display: none;" />
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
