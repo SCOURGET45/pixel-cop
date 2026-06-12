@@ -7,10 +7,16 @@ import { DrawingTools, ToolType } from './tools'
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
 
+// Auto-save interval (30 seconds)
+const AUTO_SAVE_INTERVAL = 30000;
+
 // App state
 let layerManager: LayerManager | null = null;
 let drawingTools: DrawingTools | null = null;
 let isAppInitialized = false;
+let hayCambiosSinGuardar = false;
+let autoSaveTimer: number | null = null;
+let currentProjectId: string | null = null;
 
 // Global app object for navigation
 declare global {
@@ -118,6 +124,27 @@ function initializeApp(): void {
   
   // Setup layers panel
   setupLayersPanel();
+  
+  // Start auto-save timer
+  startAutoSave();
+}
+
+// Start auto-save timer
+function startAutoSave(): void {
+  if (autoSaveTimer) return;
+  
+  autoSaveTimer = window.setInterval(() => {
+    if (hayCambiosSinGuardar && currentProjectId) {
+      saveProjectToCloud(currentProjectId);
+      console.log('Guardado automático realizado...');
+      hayCambiosSinGuardar = false;
+    }
+  }, AUTO_SAVE_INTERVAL);
+}
+
+// Mark canvas as changed (for auto-save)
+function markCanvasChanged(): void {
+  hayCambiosSinGuardar = true;
 }
 
 // Create canvas with specified dimensions
@@ -195,7 +222,13 @@ function setupToolbar(): void {
     const y = e.clientY - rect.top;
     const ctx = layerManager.getActiveCtx();
     
-    drawingTools.startDrawing(x, y, ctx);
+    const tool = drawingTools.getCurrentTool();
+    
+    if (tool === 'selection') {
+      drawingTools.startSelection(x, y);
+    } else {
+      drawingTools.startDrawing(x, y, ctx);
+    }
   });
   
   canvasContainer.addEventListener('mousemove', (e) => {
@@ -206,16 +239,44 @@ function setupToolbar(): void {
     const y = e.clientY - rect.top;
     const ctx = layerManager.getActiveCtx();
     
-    if (drawingTools.getCurrentTool() === 'picker' && e.buttons === 0) {
+    const tool = drawingTools.getCurrentTool();
+    
+    if (tool === 'selection') {
+      const selectionRect = drawingTools.updateSelection(x, y);
+      if (selectionRect && drawingTools.isCurrentlySelecting()) {
+        // Visual feedback for selection rectangle could be added here
+        markCanvasChanged();
+      }
+    } else if (drawingTools.getCurrentTool() === 'picker' && e.buttons === 0) {
       // Just hovering with picker tool
       canvasContainer.style.cursor = 'crosshair';
     } else {
       drawingTools.draw(x, y, ctx);
+      markCanvasChanged();
     }
   });
   
-  canvasContainer.addEventListener('mouseup', () => {
-    if (drawingTools) {
+  canvasContainer.addEventListener('mouseup', (e) => {
+    if (!drawingTools) return;
+    
+    const tool = drawingTools.getCurrentTool();
+    
+    if (tool === 'selection') {
+      const rect = canvasContainer.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const ctx = layerManager!.getActiveCtx();
+      
+      const buffer = drawingTools.endSelection(ctx);
+      if (buffer) {
+        // Show selection options
+        const selectionOptions = document.getElementById('selectionOptions');
+        if (selectionOptions) {
+          selectionOptions.style.display = 'block';
+        }
+        markCanvasChanged();
+      }
+    } else {
       drawingTools.stopDrawing();
     }
   });
@@ -372,6 +433,59 @@ function setupMenuActions(): void {
     }
   });
   
+  // Selection tool buttons
+  const btnDeleteSelection = document.getElementById('btnDeleteSelection');
+  if (btnDeleteSelection) {
+    btnDeleteSelection.addEventListener('click', () => {
+      if (!layerManager || !drawingTools) return;
+      
+      const ctx = layerManager.getActiveCtx();
+      drawingTools.clearSelection(ctx);
+      drawingTools.cancelSelection();
+      
+      // Hide selection options
+      const selectionOptions = document.getElementById('selectionOptions');
+      if (selectionOptions) {
+        selectionOptions.style.display = 'none';
+      }
+      
+      markCanvasChanged();
+    });
+  }
+  
+  const btnCancelSelection = document.getElementById('btnCancelSelection');
+  if (btnCancelSelection) {
+    btnCancelSelection.addEventListener('click', () => {
+      if (!drawingTools) return;
+      
+      drawingTools.cancelSelection();
+      
+      // Hide selection options
+      const selectionOptions = document.getElementById('selectionOptions');
+      if (selectionOptions) {
+        selectionOptions.style.display = 'none';
+      }
+    });
+  }
+  
+  // Tool button handler for showing/hiding selection options
+  const toolButtons = document.querySelectorAll('.tool-btn');
+  toolButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tool = (btn as HTMLElement).dataset.tool as ToolType;
+      
+      // Show/hide selection options based on tool
+      const selectionOptions = document.getElementById('selectionOptions');
+      if (selectionOptions) {
+        if (tool === 'selection' && drawingTools?.getSelectionBuffer()) {
+          selectionOptions.style.display = 'block';
+        } else {
+          selectionOptions.style.display = 'none';
+        }
+      }
+    });
+  });
+  
   // Add link to community gallery
   const menuGroup = document.querySelector('.menu-group')!;
   const comunidadLink = document.createElement('a');
@@ -413,6 +527,7 @@ function setupLayersPanel(): void {
   // Add layer
   document.getElementById('btnAddLayer')!.addEventListener('click', () => {
     layerManager!.createLayer();
+    markCanvasChanged();
   });
   
   // Delete layer
@@ -421,6 +536,8 @@ function setupLayersPanel(): void {
     if (activeLayer) {
       if (!layerManager!.deleteLayer(activeLayer.id)) {
         alert('No se puede eliminar la única capa restante.');
+      } else {
+        markCanvasChanged();
       }
     }
   });
@@ -431,9 +548,97 @@ function setupLayersPanel(): void {
     if (activeLayer) {
       if (!layerManager!.mergeDown(activeLayer.id)) {
         alert('No hay capa debajo para fusionar.');
+      } else {
+        markCanvasChanged();
       }
     }
   });
+}
+
+// Save a new project to the cloud
+async function saveNewProject(userId: string, projectName: string): Promise<void> {
+  if (!layerManager) return;
+  
+  try {
+    // Get composite canvas with all layers
+    const compositeCanvas = layerManager.getCompositeCanvas();
+    
+    // Create full image data (Base64)
+    const imageData = compositeCanvas.toDataURL('image/png');
+    
+    // Create thumbnail (smaller version)
+    const thumbnailCanvas = document.createElement('canvas');
+    const thumbWidth = 300;
+    const thumbHeight = Math.round((compositeCanvas.height / compositeCanvas.width) * thumbWidth);
+    thumbnailCanvas.width = thumbWidth;
+    thumbnailCanvas.height = thumbHeight;
+    const thumbCtx = thumbnailCanvas.getContext('2d');
+    if (thumbCtx) {
+      thumbCtx.drawImage(compositeCanvas, 0, 0, thumbWidth, thumbHeight);
+    }
+    const thumbnailData = thumbnailCanvas.toDataURL('image/jpeg', 0.8);
+    
+    // Ask if public
+    const isPublic = confirm('¿Quieres compartir este proyecto públicamente en la galería de la comunidad?');
+    
+    // Send to backend
+    const response = await fetch('http://localhost:3000/api/projects', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        name: projectName,
+        data: imageData,
+        thumbnail: thumbnailData,
+        is_public: isPublic
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      currentProjectId = result.project?._id || result.project?.id;
+      hayCambiosSinGuardar = false;
+      alert(`✅ ${result.mensaje}\n${isPublic ? '¡Tu proyecto ahora es visible en la galería de la comunidad!' : 'Proyecto guardado privadamente.'}`);
+    } else {
+      alert(`❌ Error: ${result.mensaje || 'Error al guardar el proyecto'}`);
+    }
+    
+  } catch (error) {
+    console.error('Error saving project:', error);
+    alert('❌ Error de conexión. Asegúrate de que el backend esté ejecutándose en http://localhost:3000');
+  }
+}
+
+// Save existing project to cloud (for auto-save)
+async function saveProjectToCloud(projectId: string): Promise<void> {
+  if (!layerManager) return;
+  
+  try {
+    const compositeCanvas = layerManager.getCompositeCanvas();
+    const imageData = compositeCanvas.toDataURL('image/png');
+    
+    const response = await fetch(`http://localhost:3000/api/projects/${projectId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        data: imageData,
+        updated_at: Date.now()
+      })
+    });
+    
+    if (response.ok) {
+      console.log('Auto-guardado completado');
+    } else {
+      console.error('Error en auto-guardado');
+    }
+  } catch (error) {
+    console.error('Error en auto-guardado:', error);
+  }
 }
 
 // Start the app

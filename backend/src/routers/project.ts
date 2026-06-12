@@ -179,4 +179,53 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+/* ==========================================
+   REMIX / CLONAR PROYECTO
+========================================== */
+router.post("/remix/:id", async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({
+        mensaje: "Falta el campo requerido: userId"
+      });
+    }
+
+    const originalProject = await Project.findById(req.params.id);
+    
+    if (!originalProject) {
+      return res.status(404).json({
+        mensaje: "Proyecto original no encontrado"
+      });
+    }
+
+    // Create a copy with the new user as owner
+    const newProject = new Project({
+      user_id: userId,
+      name: `Remix de ${originalProject.name}`,
+      data: originalProject.data,
+      thumbnail: originalProject.thumbnail,
+      is_public: false // Remix starts as private by default
+    });
+
+    const savedProject = await newProject.save();
+
+    res.status(201).json({
+      mensaje: "Proyecto clonado con éxito",
+      new_id: savedProject._id,
+      project: savedProject
+    });
+
+  } catch (error) {
+    const err = error as Error;
+
+    res.status(500).json({
+      mensaje: "Error al clonar el proyecto",
+      error: err.message
+    });
+
+  }
+});
+
 export default router;
