@@ -26,10 +26,24 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/pixela
 
 // Middleware
 app.use(cors({
-  origin: ['http://127.0.0.1:5500', 'http://localhost:5500', 'http://127.0.0.1:8080', 'http://localhost:8080', 'http://127.0.0.1:3000', 'http://localhost:3000', '*'],
+  origin: [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://192.168.0.123:5173',
+    'http://192.168.0.123:5174',
+    'http://localhost:5174',
+    'http://127.0.0.1:5174',
+    'http://127.0.0.1:5500',
+    'http://localhost:5500',
+    'http://127.0.0.1:8080',
+    'http://localhost:8080',
+    'http://127.0.0.1:3000',
+    'http://localhost:3000',
+    /http:\/\/192\.168\.\d+\.\d+:\d+/ // Cualquier IP en la red local
+  ],
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Manejador de errores personalizado para body-parser ANTES de las rutas
