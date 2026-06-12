@@ -26,11 +26,32 @@
       <div id="register-form" class="auth-form hidden">
         <h2>Registro</h2>
         <form id="registerForm">
-          <input type="text" id="regNombre" placeholder="Nombre completo" required />
-          <input type="text" id="regUsuario" placeholder="Usuario" required />
-          <input type="email" id="regCorreo" placeholder="Correo electrónico" required />
-          <input type="password" id="regPassword" placeholder="Contraseña" required />
-          <button type="submit">Registrarse</button>
+          <div class="form-group">
+            <label for="regNombre">Nombre completo:</label>
+            <input type="text" id="regNombre" placeholder="Ej: Juan Pérez" required title="Tu nombre completo" />
+          </div>
+          
+          <div class="form-group">
+            <label for="regUsuario">Nombre de usuario:</label>
+            <input type="text" id="regUsuario" placeholder="Ej: artista_pixel" required title="Nombre único para tu cuenta (sin espacios)" pattern="[a-zA-Z0-9_]+" />
+            <small>Solo letras, números y guiones bajos</small>
+          </div>
+          
+          <div class="form-group">
+            <label for="regCorreo">Correo electrónico:</label>
+            <input type="email" id="regCorreo" placeholder="Ej: juan@ejemplo.com" required title="Tu correo electrónico válido" />
+          </div>
+          
+          <div class="form-group">
+            <label for="regPassword">Contraseña:</label>
+            <input type="password" id="regPassword" placeholder="Ej: MiClave123!" required title="Contraseña segura (mínimo 6 caracteres)" minlength="6" />
+            <small>Mínimo 6 caracteres</small>
+          </div>
+          
+          <div id="registerError" class="error-message hidden"></div>
+          <div id="registerSuccess" class="success-message hidden"></div>
+          
+          <button type="submit" id="btnRegisterSubmit">Registrarse</button>
         </form>
         <p>¿Ya tienes cuenta? <a href="#" id="showLogin">Inicia sesión</a></p>
       </div>

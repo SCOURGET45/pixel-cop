@@ -149,29 +149,99 @@ function setupAuthForms(): void {
 
   // Handle register form submission
   if (registerForm) {
+    const errorDiv = document.getElementById('registerError') as HTMLDivElement;
+    const successDiv = document.getElementById('registerSuccess') as HTMLDivElement;
+    const submitBtn = document.getElementById('btnRegisterSubmit') as HTMLButtonElement;
+    
     registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      // Limpiar mensajes previos
+      if (errorDiv) errorDiv.classList.add('hidden');
+      if (successDiv) successDiv.classList.add('hidden');
+      
       const nombreInput = document.getElementById('regNombre') as HTMLInputElement;
       const usuarioInput = document.getElementById('regUsuario') as HTMLInputElement;
       const correoInput = document.getElementById('regCorreo') as HTMLInputElement;
       const passwordInput = document.getElementById('regPassword') as HTMLInputElement;
       
-      const result = await authService.register({
-        Nombre: nombreInput.value,
-        Usuario: usuarioInput.value,
-        correo: correoInput.value,
-        password: passwordInput.value
-      });
-      
-      if (result.success) {
-        alert(result.message);
-        // Switch to login form after successful registration
-        if (loginFormDiv && registerFormDiv) {
-          registerFormDiv.classList.add('hidden');
-          loginFormDiv.classList.remove('hidden');
+      // Validaciones adicionales
+      if (!nombreInput.value.trim()) {
+        if (errorDiv) {
+          errorDiv.textContent = '❌ El nombre completo es requerido';
+          errorDiv.classList.remove('hidden');
         }
-      } else {
-        alert(result.message);
+        return;
+      }
+      
+      if (!usuarioInput.value.trim() || !/^[a-zA-Z0-9_]+$/.test(usuarioInput.value)) {
+        if (errorDiv) {
+          errorDiv.textContent = '❌ El usuario solo puede contener letras, números y guiones bajos (ej: artista_pixel)';
+          errorDiv.classList.remove('hidden');
+        }
+        return;
+      }
+      
+      if (!correoInput.value.trim() || !/\S+@\S+\.\S+/.test(correoInput.value)) {
+        if (errorDiv) {
+          errorDiv.textContent = '❌ Ingresa un correo electrónico válido (ej: juan@ejemplo.com)';
+          errorDiv.classList.remove('hidden');
+        }
+        return;
+      }
+      
+      if (!passwordInput.value || passwordInput.value.length < 6) {
+        if (errorDiv) {
+          errorDiv.textContent = '❌ La contraseña debe tener al menos 6 caracteres';
+          errorDiv.classList.remove('hidden');
+        }
+        return;
+      }
+      
+      // Deshabilitar botón durante el registro
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Registrando...';
+      }
+      
+      try {
+        const result = await authService.register({
+          Nombre: nombreInput.value.trim(),
+          Usuario: usuarioInput.value.trim(),
+          correo: correoInput.value.trim(),
+          password: passwordInput.value
+        });
+        
+        if (result.success) {
+          if (successDiv) {
+            successDiv.textContent = '✅ ' + result.message;
+            successDiv.classList.remove('hidden');
+          }
+          // Switch to login form after successful registration
+          setTimeout(() => {
+            if (loginFormDiv && registerFormDiv) {
+              registerFormDiv.classList.add('hidden');
+              loginFormDiv.classList.remove('hidden');
+            }
+          }, 1500);
+        } else {
+          if (errorDiv) {
+            errorDiv.textContent = '❌ ' + result.message;
+            errorDiv.classList.remove('hidden');
+          }
+        }
+      } catch (error) {
+        console.error('Error en registro:', error);
+        if (errorDiv) {
+          errorDiv.textContent = '❌ Error de conexión. Verifica que el backend esté ejecutándose.';
+          errorDiv.classList.remove('hidden');
+        }
+      } finally {
+        // Reactivar botón
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Registrarse';
+        }
       }
     });
   }
