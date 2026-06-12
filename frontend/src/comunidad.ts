@@ -14,11 +14,24 @@ interface Project {
 }
 
 // Try to detect if we're in development or production
-const API_BASE_URL = window.location.hostname === 'localhost' 
+// Force localhost for development environments regardless of current hostname
+const isDevelopment = window.location.hostname === 'localhost' || 
+                      window.location.hostname === '127.0.0.1' ||
+                      window.location.port === '5500' ||
+                      window.location.port === '8080' ||
+                      window.location.protocol === 'file:';
+
+const API_BASE_URL = isDevelopment 
   ? 'http://localhost:3000' 
   : window.location.origin;
   
 const API_URL = `${API_BASE_URL}/api/projects`;
+
+// Debug logging (remove in production)
+console.log('🔌 Conectando a API:', API_URL);
+console.log('🌐 Hostname:', window.location.hostname);
+console.log('🚪 Puerto:', window.location.port);
+console.log('📡 Protocolo:', window.location.protocol);
 
 // DOM Elements
 const loadingEl = document.getElementById('loading')!;
