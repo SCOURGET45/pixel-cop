@@ -41,7 +41,8 @@ const InicioSesionSchema = new mongoose.Schema<IUser>({
   correo: {
     type: String,
     trim: true,
-    maxlength: 30
+    maxlength: 100,
+    match: [/^\S+@\S+\.\S+$/, 'Por favor ingresa un correo válido']
   },
 
    imgPerfil: {
