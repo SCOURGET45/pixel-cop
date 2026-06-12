@@ -1,12 +1,12 @@
 :root {
   --primary: #7c3aed;
   --primary-hover: #8b5cf6;
-  --bg-dark: #1a1a1a;
-  --bg-panel: #252525;
-  --bg-hover: #333333;
+  --bg-dark: #121212;
+  --bg-panel: #1e1e1e;
+  --bg-hover: #2a2a2a;
   --text-primary: #e0e0e0;
   --text-secondary: #a0a0a0;
-  --border: #404040;
+  --border: #333333;
   --icon-color: #b0b0b0;
   --icon-active: #7c3aed;
   --danger: #ef4444;
@@ -32,22 +32,421 @@ body:not(.dark-theme) {
   --icon-color: #666666;
 }
 
-body.dark-theme {
-  --bg-dark: #1a1a1a;
-  --bg-panel: #252525;
-  --bg-hover: #333333;
+body.dark-theme, body {
+  --bg-dark: #121212;
+  --bg-panel: #1e1e1e;
+  --bg-hover: #2a2a2a;
   --text-primary: #e0e0e0;
   --text-secondary: #a0a0a0;
-  --border: #404040;
+  --border: #333333;
   --icon-color: #b0b0b0;
 }
 
-body.dark-theme .canvas-area {
+body.dark-theme .canvas-area, body .canvas-area {
   background: #1e293b;
 }
 
-body.dark-theme .canvas-container {
+body.dark-theme .canvas-container, body .canvas-container {
   background: #334155;
+}
+
+/* ==================== SPLASH SCREEN ==================== */
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #121212 0%, #1e1e1e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  transition: opacity 0.5s ease-out;
+}
+
+.splash-content {
+  text-align: center;
+}
+
+.splash-logo {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #e0e0e0;
+  margin-bottom: 0.5rem;
+  letter-spacing: 2px;
+}
+
+.splash-logo .highlight {
+  color: var(--primary);
+}
+
+.splash-tagline {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+.splash-loader {
+  width: 50px;
+  height: 50px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==================== PROPERTIES BAR ==================== */
+.properties-bar {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 100;
+  box-shadow: var(--shadow);
+  max-width: 600px;
+}
+
+.properties-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.properties-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.properties-content label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.properties-content input[type="range"] {
+  width: 100px;
+}
+
+.properties-content select {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+}
+
+/* ==================== STATUS BAR ==================== */
+.status-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.status-left,
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-separator {
+  color: var(--border);
+  opacity: 0.5;
+}
+
+/* ==================== MODALS ==================== */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+}
+
+.modal-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-body p {
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.import-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.import-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.import-option:hover {
+  border-color: var(--primary);
+  background: var(--bg-dark);
+  transform: translateY(-2px);
+}
+
+.import-option svg {
+  width: 32px;
+  height: 32px;
+  color: var(--icon-color);
+}
+
+.import-option span {
+  font-size: 12px;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.import-preview {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.form-group input[type="number"],
+.form-group select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.form-group input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.btn-primary,
+.btn-secondary {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: var(--primary);
+  border: none;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-secondary {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-dark);
+}
+
+/* ==================== COLLAPSIBLE PANELS ==================== */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.panel-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.btn-collapse {
+  background: none;
+  border: none;
+  color: var(--icon-color);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  transition: all 0.2s;
+}
+
+.btn-collapse:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.btn-collapse svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s;
+}
+
+.layers-panel.collapsed .btn-collapse svg {
+  transform: rotate(180deg);
+}
+
+.layers-panel.collapsed .layers-controls,
+.layers-panel.collapsed .layers-list {
+  display: none;
+}
+
+.layers-panel.collapsed {
+  width: 50px !important;
+  overflow: hidden;
+}
+
+.layers-panel.collapsed .panel-header {
+  justify-content: center;
+}
+
+/* ==================== TOOL BUTTONS WITH ICONS ONLY ==================== */
+.layers-controls button {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--icon-color);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  transition: all 0.2s;
+  width: 36px;
+  height: 36px;
+}
+
+.layers-controls button:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.layers-controls button svg {
+  width: 20px;
+  height: 20px;
 }
 
 body.dark-theme details.color-details summary {
