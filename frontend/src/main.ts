@@ -1,60 +1,389 @@
 import './style.css'
-import typescriptLogo from './assets/typescript.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import { setupCounter } from './counter.ts'
+import { authService } from './auth'
+import { LayerManager } from './layers'
+import { DrawingTools, ToolType } from './tools'
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-<section id="center">
-  <div class="hero">
-    <img src="${heroImg}" class="base" width="170" height="179">
-    <img src="${typescriptLogo}" class="framework" alt="TypeScript logo"/>
-    <img src="${viteLogo}" class="vite" alt="Vite logo" />
-  </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/main.ts</code> and save to test <code>HMR</code></p>
-  </div>
-  <button id="counter" type="button" class="counter"></button>
-</section>
+// Canvas dimensions
+const CANVAS_WIDTH = 800;
+const CANVAS_HEIGHT = 600;
 
-<div class="ticks"></div>
+// App state
+let layerManager: LayerManager | null = null;
+let drawingTools: DrawingTools | null = null;
+let isAppInitialized = false;
 
-<section id="next-steps">
-  <div id="docs">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#documentation-icon"></use></svg>
-    <h2>Documentation</h2>
-    <p>Your questions, answered</p>
-    <ul>
-      <li>
-        <a href="https://vite.dev/" target="_blank">
-          <img class="logo" src="${viteLogo}" alt="" />
-          Explore Vite
-        </a>
-      </li>
-      <li>
-        <a href="https://www.typescriptlang.org" target="_blank">
-          <img class="button-icon" src="${typescriptLogo}" alt="">
-          Learn more
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div id="social">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#social-icon"></use></svg>
-    <h2>Connect with us</h2>
-    <p>Join the Vite community</p>
-    <ul>
-      <li><a href="https://github.com/vitejs/vite" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#github-icon"></use></svg>GitHub</a></li>
-      <li><a href="https://chat.vite.dev/" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#discord-icon"></use></svg>Discord</a></li>
-      <li><a href="https://x.com/vite_js" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#x-icon"></use></svg>X.com</a></li>
-      <li><a href="https://bsky.app/profile/vite.dev" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#bluesky-icon"></use></svg>Bluesky</a></li>
-    </ul>
-  </div>
-</section>
+// DOM Elements
+const authContainer = document.getElementById('auth-container')!;
+const appContainer = document.getElementById('app-container')!;
+const loginForm = document.getElementById('login-form')!;
+const registerForm = document.getElementById('register-form')!;
+const userDisplay = document.getElementById('user-display')!;
 
-<div class="ticks"></div>
-<section id="spacer"></section>
-`
+// Initialize the application
+function init(): void {
+  checkAuth();
+  setupAuthListeners();
+}
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+// Check if user is logged in
+function checkAuth(): void {
+  if (authService.isLoggedIn()) {
+    showApp();
+  } else {
+    showAuth();
+  }
+}
+
+// Show authentication screens
+function showAuth(): void {
+  authContainer.classList.remove('hidden');
+  appContainer.classList.add('hidden');
+}
+
+// Show main app
+function showApp(): void {
+  authContainer.classList.add('hidden');
+  appContainer.classList.remove('hidden');
+  
+  const user = authService.getCurrentUser();
+  if (user) {
+    userDisplay.textContent = `Hola, ${user.Usuario}`;
+  }
+  
+  if (!isAppInitialized) {
+    initializeApp();
+  }
+}
+
+// Setup authentication event listeners
+function setupAuthListeners(): void {
+  // Login form
+  const loginFormEl = document.getElementById('loginForm') as HTMLFormElement;
+  loginFormEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const usuario = (document.getElementById('loginUsuario') as HTMLInputElement).value;
+    const password = (document.getElementById('loginPassword') as HTMLInputElement).value;
+    
+    const result = await authService.login(usuario, password);
+    
+    if (result.success) {
+      showApp();
+    } else {
+      alert(result.message);
+    }
+  });
+
+  // Register form
+  const registerFormEl = document.getElementById('registerForm') as HTMLFormElement;
+  registerFormEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const userData = {
+      Nombre: (document.getElementById('regNombre') as HTMLInputElement).value,
+      Usuario: (document.getElementById('regUsuario') as HTMLInputElement).value,
+      correo: (document.getElementById('regCorreo') as HTMLInputElement).value,
+      password: (document.getElementById('regPassword') as HTMLInputElement).value,
+    };
+    
+    const result = await authService.register(userData);
+    
+    if (result.success) {
+      alert(result.message);
+      // Switch to login form
+      loginForm.classList.remove('hidden');
+      registerForm.classList.add('hidden');
+    } else {
+      alert(result.message);
+    }
+  });
+
+  // Toggle between login and register
+  document.getElementById('showRegister')!.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginForm.classList.add('hidden');
+    registerForm.classList.remove('hidden');
+  });
+
+  document.getElementById('showLogin')!.addEventListener('click', (e) => {
+    e.preventDefault();
+    registerForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+  });
+
+  // Logout
+  document.getElementById('btnLogout')!.addEventListener('click', () => {
+    authService.logout();
+    showAuth();
+  });
+}
+
+// Initialize the main application
+function initializeApp(): void {
+  isAppInitialized = true;
+  
+  // Initialize tools
+  drawingTools = new DrawingTools();
+  
+  // Initialize layer manager
+  const canvasContainer = document.getElementById('canvas-container')!;
+  const layersList = document.getElementById('layers-list')!;
+  layerManager = new LayerManager(canvasContainer, layersList);
+  
+  // Create initial canvas and layer
+  createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+  
+  // Setup toolbar
+  setupToolbar();
+  
+  // Setup menu actions
+  setupMenuActions();
+  
+  // Setup layers panel
+  setupLayersPanel();
+}
+
+// Create canvas with specified dimensions
+function createCanvas(width: number, height: number): void {
+  if (!layerManager) return;
+  
+  // Clear existing canvases
+  const container = document.getElementById('canvas-container')!;
+  container.innerHTML = '';
+  container.style.width = `${width}px`;
+  container.style.height = `${height}px`;
+  
+  // Create first layer
+  const layer = layerManager.createLayer('Fondo');
+  layer.canvas.width = width;
+  layer.canvas.height = height;
+  
+  // Fill with white background
+  layer.ctx.fillStyle = '#ffffff';
+  layer.ctx.fillRect(0, 0, width, height);
+}
+
+// Setup toolbar event listeners
+function setupToolbar(): void {
+  if (!drawingTools) return;
+  
+  // Tool buttons
+  const toolButtons = document.querySelectorAll('.tool-btn');
+  toolButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Remove active class from all buttons
+      toolButtons.forEach(b => b.classList.remove('active'));
+      // Add active class to clicked button
+      btn.classList.add('active');
+      
+      const tool = (btn as HTMLElement).dataset.tool as ToolType;
+      drawingTools!.setTool(tool);
+    });
+  });
+  
+  // Brush size
+  const brushSizeInput = document.getElementById('brushSize') as HTMLInputElement;
+  const brushSizeValue = document.getElementById('brushSizeValue')!;
+  
+  brushSizeInput.addEventListener('input', () => {
+    const size = parseInt(brushSizeInput.value, 10);
+    brushSizeValue.textContent = `${size}px`;
+    drawingTools!.setBrushSize(size);
+  });
+  
+  // Color picker
+  const colorPicker = document.getElementById('colorPicker') as HTMLInputElement;
+  colorPicker.addEventListener('input', () => {
+    drawingTools!.setColor(colorPicker.value);
+  });
+  
+  // Color presets
+  const presetColors = document.querySelectorAll('.preset-color');
+  presetColors.forEach(preset => {
+    preset.addEventListener('click', () => {
+      const color = (preset as HTMLElement).dataset.color!;
+      drawingTools!.setColor(color);
+      colorPicker.value = color;
+    });
+  });
+  
+  // Canvas drawing events
+  const canvasContainer = document.getElementById('canvas-container')!;
+  
+  canvasContainer.addEventListener('mousedown', (e) => {
+    if (!layerManager || !drawingTools) return;
+    
+    const rect = canvasContainer.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const ctx = layerManager.getActiveCtx();
+    
+    drawingTools.startDrawing(x, y, ctx);
+  });
+  
+  canvasContainer.addEventListener('mousemove', (e) => {
+    if (!layerManager || !drawingTools) return;
+    
+    const rect = canvasContainer.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const ctx = layerManager.getActiveCtx();
+    
+    if (drawingTools.getCurrentTool() === 'picker' && e.buttons === 0) {
+      // Just hovering with picker tool
+      canvasContainer.style.cursor = 'crosshair';
+    } else {
+      drawingTools.draw(x, y, ctx);
+    }
+  });
+  
+  canvasContainer.addEventListener('mouseup', () => {
+    if (drawingTools) {
+      drawingTools.stopDrawing();
+    }
+  });
+  
+  canvasContainer.addEventListener('mouseleave', () => {
+    if (drawingTools) {
+      drawingTools.stopDrawing();
+    }
+  });
+  
+  canvasContainer.addEventListener('click', (e) => {
+    if (!layerManager || !drawingTools) return;
+    
+    const tool = drawingTools.getCurrentTool();
+    
+    if (tool === 'picker') {
+      const rect = canvasContainer.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const ctx = layerManager.getActiveCtx();
+      
+      const pickedColor = drawingTools.pickColor(x, y, ctx);
+      if (pickedColor) {
+        drawingTools.setColor(pickedColor);
+        const colorPicker = document.getElementById('colorPicker') as HTMLInputElement;
+        colorPicker.value = pickedColor;
+      }
+    } else if (tool === 'fill') {
+      const rect = canvasContainer.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const ctx = layerManager.getActiveCtx();
+      
+      drawingTools.startDrawing(x, y, ctx);
+    }
+  });
+}
+
+// Setup menu actions
+function setupMenuActions(): void {
+  // New file
+  document.getElementById('btnNew')!.addEventListener('click', () => {
+    if (confirm('¿Crear nuevo lienzo? Se perderá el trabajo actual no guardado.')) {
+      createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+    }
+  });
+  
+  // Open file (import image)
+  document.getElementById('btnOpen')!.addEventListener('click', () => {
+    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+    fileInput.click();
+  });
+  
+  document.getElementById('fileInput')!.addEventListener('change', (e) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    
+    if (file && layerManager) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const activeLayer = layerManager!.getActiveLayer();
+          if (activeLayer) {
+            // Resize canvas to match image if needed
+            if (img.width !== activeLayer.canvas.width || img.height !== activeLayer.canvas.height) {
+              activeLayer.canvas.width = img.width;
+              activeLayer.canvas.height = img.height;
+              document.getElementById('canvas-container')!.style.width = `${img.width}px`;
+              document.getElementById('canvas-container')!.style.height = `${img.height}px`;
+            }
+            
+            // Draw image on current layer
+            activeLayer.ctx.drawImage(img, 0, 0);
+          }
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    // Reset input
+    input.value = '';
+  });
+  
+  // Save (placeholder for future backend integration)
+  document.getElementById('btnSave')!.addEventListener('click', () => {
+    alert('Función de guardar disponible próximamente. Usa "Exportar" para descargar tu trabajo.');
+  });
+  
+  // Export
+  document.getElementById('btnExport')!.addEventListener('click', () => {
+    if (!layerManager) return;
+    
+    const format = (document.getElementById('exportFormat') as HTMLSelectElement).value as 'png' | 'jpg' | 'gif';
+    const compositeCanvas = layerManager.getCompositeCanvas();
+    
+    let dataURL: string;
+    if (format === 'jpg') {
+      dataURL = compositeCanvas.toDataURL('image/jpeg', 0.95);
+    } else if (format === 'gif') {
+      // GIF export - we'll export as PNG since canvas doesn't support GIF natively
+      dataURL = compositeCanvas.toDataURL('image/png');
+      alert('Nota: El formato GIF se exportará como PNG. Para GIF animado, se requiere una librería adicional.');
+    } else {
+      dataURL = compositeCanvas.toDataURL('image/png');
+    }
+    
+    // Create download link
+    const link = document.createElement('a');
+    link.download = `pixelart-${Date.now()}.${format === 'gif' ? 'png' : format}`;
+    link.href = dataURL;
+    link.click();
+  });
+}
+
+// Setup layers panel
+function setupLayersPanel(): void {
+  if (!layerManager) return;
+  
+  // Add layer
+  document.getElementById('btnAddLayer')!.addEventListener('click', () => {
+    layerManager!.createLayer();
+  });
+  
+  // Delete layer
+  document.getElementById('btnDeleteLayer')!.addEventListener('click', () => {
+    const activeLayer = layerManager!.getActiveLayer();
+    if (activeLayer) {
+      if (!layerManager!.deleteLayer(activeLayer.id)) {
+        alert('No se puede eliminar la única capa restante.');
+      }
+    }
+  });
+  
+  // Merge down
+  document.getElementById('btnMergeDown')!.addEventListener('click', () => {
+    const activeLayer = layerManager!.getActiveLayer();
+    if (activeLayer) {
+      if (!layerManager!.mergeDown(activeLayer.id)) {
+        alert('No hay capa debajo para fusionar.');
+      }
+    }
+  });
+}
+
+// Start the app
+init();
