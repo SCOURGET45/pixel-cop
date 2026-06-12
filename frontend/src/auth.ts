@@ -34,18 +34,18 @@ class AuthService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ usuario, password }),
+        body: JSON.stringify({ Usuario: usuario, password }),
       });
 
       const data = await response.json();
 
-      if (response.ok && data.user) {
-        this.currentUser = data.user;
-        localStorage.setItem('currentUser', JSON.stringify(data.user));
+      if (response.ok && data.usuario) {
+        this.currentUser = data.usuario;
+        localStorage.setItem('currentUser', JSON.stringify(data.usuario));
         return {
           success: true,
           message: 'Inicio de sesión exitoso',
-          user: data.user,
+          user: data.usuario,
         };
       } else {
         return {
