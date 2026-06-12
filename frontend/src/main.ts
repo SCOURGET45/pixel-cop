@@ -164,8 +164,12 @@ function setupEventListeners() {
         if (e.code === 'Space' || e.key.toLowerCase() === 'h') {
             (document.querySelector('[data-tool="hand"]') as HTMLElement)?.click();
         }
-        if (e.key.toLowerCase() === 'b') document.querySelector('[data-tool="brush"]')?.click();
-        if (e.key.toLowerCase() === 'e') document.querySelector('[data-tool="eraser"]')?.click();
+        const brushBtn = document.querySelector('[data-tool="brush"]') as HTMLElement;
+        if (e.key.toLowerCase() === 'b' && brushBtn) brushBtn.click();
+        
+        const eraserBtn = document.querySelector('[data-tool="eraser"]') as HTMLElement;
+        if (e.key.toLowerCase() === 'e' && eraserBtn) eraserBtn.click();
+        
         if (e.ctrlKey && e.key === '+') changeZoom(0.1);
         if (e.ctrlKey && e.key === '-') changeZoom(-0.1);
         if (e.ctrlKey && e.key === '0') resetZoom();
