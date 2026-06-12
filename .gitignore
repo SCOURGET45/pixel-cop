@@ -1,1 +1,44 @@
-(frontend/src/layers.ts, frontend/src/main.ts)
+```gitignore
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.js.map
+
+# Editors
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Python artifacts (if any Python in project)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# MyPy cache
+.mypy_cache/
+
+# Pytest cache
+.pytest_cache/
+```

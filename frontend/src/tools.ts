@@ -203,6 +203,7 @@ export class DrawingTools {
     ctx.arc(x, y, this.brushSize / 2, 0, Math.PI * 2);
     
     if (this.currentTool === 'eraser') {
+      // Eraser: paint with transparent color (effectively removing pixels)
       ctx.globalCompositeOperation = 'destination-out';
       ctx.fillStyle = 'rgba(0, 0, 0, 1)';
     } else {
@@ -224,6 +225,7 @@ export class DrawingTools {
     ctx.lineWidth = this.brushSize;
 
     if (this.currentTool === 'eraser') {
+      // Eraser: paint with transparent color (effectively removing pixels)
       ctx.globalCompositeOperation = 'destination-out';
       ctx.strokeStyle = 'rgba(0, 0, 0, 1)';
     } else {

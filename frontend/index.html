@@ -65,7 +65,7 @@
         <aside class="toolbar">
           <h3>Herramientas</h3>
           <button class="tool-btn active" data-tool="brush" title="Pincel">🖌️</button>
-          <button class="tool-btn" data-tool="eraser" title="Goma">🧹</button>
+          <button class="tool-btn" data-tool="eraser" title="Goma">🧽</button>
           <button class="tool-btn" data-tool="fill" title="Relleno">🪣</button>
           <button class="tool-btn" data-tool="picker" title="Selector de color">💉</button>
           <button class="tool-btn" data-tool="selection" title="Selección">⬚</button>
@@ -79,6 +79,22 @@
             <label>Tamaño:</label>
             <input type="range" id="brushSize" min="1" max="50" value="5" />
             <span id="brushSizeValue">5px</span>
+          </div>
+          
+          <!-- Undo/Redo Controls -->
+          <div class="tool-options">
+            <label>Historial:</label>
+            <button id="btnUndo" title="Deshacer (Ctrl+Z)">↩️</button>
+            <button id="btnRedo" title="Rehacer (Ctrl+Y)">↪️</button>
+          </div>
+          
+          <!-- Zoom Controls -->
+          <div class="tool-options">
+            <label>Zoom:</label>
+            <button id="btnZoomOut" title="Alejar">➖</button>
+            <span id="zoomValue">100%</span>
+            <button id="btnZoomIn" title="Acercar">➕</button>
+            <button id="btnZoomReset" title="Resetear zoom">🔄</button>
           </div>
           
           <div class="color-picker">
