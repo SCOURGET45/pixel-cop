@@ -581,11 +581,37 @@ function setupToolbar(): void {
     }
   });
   
-  // Keyboard shortcuts for selection tool and undo/redo
+  // Keyboard shortcuts for tools, selection, undo/redo, and zoom
   window.addEventListener('keydown', (e) => {
     if (!drawingTools || !layerManager) return;
     
     const tool = drawingTools.getCurrentTool();
+    
+    // Don't trigger shortcuts when typing in inputs
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+    
+    // Tool shortcuts
+    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+      switch(e.key.toLowerCase()) {
+        case 'b':
+          selectTool('brush');
+          return;
+        case 'e':
+          selectTool('eraser');
+          return;
+        case 'g':
+          selectTool('fill');
+          return;
+        case 'i':
+          selectTool('picker');
+          return;
+        case 'm':
+          selectTool('selection');
+          return;
+      }
+    }
     
     // Ctrl+Z for Undo
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
@@ -598,6 +624,23 @@ function setupToolbar(): void {
     if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
       e.preventDefault();
       redo();
+      return;
+    }
+    
+    // Zoom shortcuts: +/- / 0
+    if ((e.ctrlKey || e.metaKey) && e.key === '+') {
+      e.preventDefault();
+      zoomIn();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+      e.preventDefault();
+      zoomOut();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+      e.preventDefault();
+      resetZoom();
       return;
     }
     
@@ -622,6 +665,20 @@ function setupToolbar(): void {
       }
     }
   });
+  
+  // Helper function to select tool by name
+  function selectTool(toolName: string): void {
+    const buttons = document.querySelectorAll('.tool-btn[data-tool]');
+    buttons.forEach(btn => {
+      if (btn.getAttribute('data-tool') === toolName) {
+        btn.classList.add('active');
+        // Trigger click to run existing tool change logic
+        btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
   
   canvasContainer.addEventListener('click', (e) => {
     if (!layerManager || !drawingTools) return;

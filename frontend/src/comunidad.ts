@@ -13,7 +13,12 @@ interface Project {
   created_at: string;
 }
 
-const API_URL = 'http://localhost:3000/api/projects';
+// Try to detect if we're in development or production
+const API_BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:3000' 
+  : window.location.origin;
+  
+const API_URL = `${API_BASE_URL}/api/projects`;
 
 // DOM Elements
 const loadingEl = document.getElementById('loading')!;
@@ -45,7 +50,15 @@ export async function loadProjects(): Promise<void> {
     
   } catch (error) {
     console.error('Error loading projects:', error);
-    showError(error instanceof Error ? error.message : 'Error desconocido');
+    const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+    
+    // More helpful error message for connection issues
+    let friendlyMessage = errorMsg;
+    if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+      friendlyMessage = 'No se pudo conectar con el servidor. Asegúrate de que:\n\n1. El backend esté ejecutándose (npm start en backend/src)\n2. El servidor esté disponible en http://localhost:3000\n3. MongoDB esté conectado correctamente';
+    }
+    
+    showError(friendlyMessage);
   }
 }
 
@@ -146,7 +159,7 @@ function createProjectCard(project: Project): HTMLElement {
       }
     } catch (error) {
       console.error('Error al hacer remix:', error);
-      alert('❌ Error de conexión. Asegúrate de que el backend esté ejecutándose.');
+      alert('❌ Error de conexión. Asegúrate de que:\n\n1. El backend esté ejecutándose (npm start en backend/src)\n2. El servidor esté disponible en http://localhost:3000\n3. MongoDB esté conectado correctamente');
     }
   };
   
