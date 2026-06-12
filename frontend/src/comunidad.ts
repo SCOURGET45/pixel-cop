@@ -14,12 +14,16 @@ interface Project {
 }
 
 // Try to detect if we're in development or production
-// Force localhost for development environments regardless of current hostname
+// Force localhost:3000 for any local development environment (including LAN IPs)
 const isDevelopment = window.location.hostname === 'localhost' || 
                       window.location.hostname === '127.0.0.1' ||
                       window.location.port === '5500' ||
                       window.location.port === '8080' ||
-                      window.location.protocol === 'file:';
+                      window.location.port === '5173' ||  // Vite default port
+                      window.location.protocol === 'file:' ||
+                      window.location.hostname.startsWith('192.168.') ||  // LAN IPs
+                      window.location.hostname.startsWith('10.') ||       // LAN IPs
+                      window.location.hostname.startsWith('172.');        // LAN IPs
 
 const API_BASE_URL = isDevelopment 
   ? 'http://localhost:3000' 
