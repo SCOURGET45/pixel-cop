@@ -284,7 +284,11 @@ function createCanvas(width: number, height: number): void {
   if (!layerManager) return;
   
   // Clear existing canvases
-  const container = document.getElementById('canvas-container')!;
+  const container = document.getElementById('canvas-container');
+  if (!container) {
+    console.error("Error: No se encontró el contenedor 'canvas-container' en el DOM.");
+    return;
+  }
   container.innerHTML = '';
   container.style.width = `${width}px`;
   container.style.height = `${height}px`;
