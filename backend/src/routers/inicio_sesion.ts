@@ -55,11 +55,21 @@ router.get("/:id", async (req, res) => {
 ========================================== */
 router.post("/", async (req, res) => {
   try {
+    console.log("📥 Datos recibidos:", req.body);
+
+    const { Nombre, Usuario, correo, password } = req.body;
+
+    // Validaciones básicas
+    if (!Nombre || !Usuario || !correo || !password) {
+      return res.status(400).json({
+        mensaje: "Todos los campos son requeridos"
+      });
+    }
 
     const usuarioExistente = await InicioSesion.findOne({
       $or: [
-        { Usuario: req.body.Usuario },
-        { correo: req.body.correo }
+        { Usuario: Usuario },
+        { correo: correo }
       ]
     });
 
@@ -70,15 +80,17 @@ router.post("/", async (req, res) => {
     }
 
     const nuevoUsuario = new InicioSesion({
-      idUsuario: req.body.idUsuario,
-      Nombre: req.body.Nombre,
-      Usuario: req.body.Usuario,
-      password: req.body.password,
-      correo: req.body.correo,
-      imgPerfil: req.body.imgPerfil
+      idUsuario: Usuario.toLowerCase().replace(/\s/g, '').substring(0, 30),
+      Nombre: Nombre.trim(),
+      Usuario: Usuario.trim(),
+      password: password,
+      correo: correo.trim(),
+      imgPerfil: ''
     });
 
+    console.log("💾 Guardando usuario:", nuevoUsuario);
     const usuarioGuardado = await nuevoUsuario.save();
+    console.log("✅ Usuario guardado:", usuarioGuardado._id);
 
     res.status(201).json({
       mensaje: "Usuario creado correctamente",
@@ -87,10 +99,13 @@ router.post("/", async (req, res) => {
 
   } catch (error) {
     const err = error as Error;
+    console.error("❌ Error al crear usuario:", err.message);
+    console.error("Stack:", err.stack);
 
     res.status(500).json({
       mensaje: "Error al crear el usuario",
-      error: err.message
+      error: err.message,
+      detalles: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
   }
 });
