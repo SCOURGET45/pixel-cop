@@ -1,5 +1,6 @@
 import express from "express";
 import Project from "../models/project";
+import { verifyToken, requireRole, AuthRequest } from "../middleware/auth";
 
 const router = express.Router();
 
@@ -155,15 +156,27 @@ router.put("/:id", async (req, res) => {
 /* ==========================================
    ELIMINAR PROYECTO
 ========================================== */
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", verifyToken, async (req: AuthRequest, res) => {
   try {
-    const deletedProject = await Project.findByIdAndDelete(req.params.id);
+    const project = await Project.findById(req.params.id);
 
-    if (!deletedProject) {
+    if (!project) {
       return res.status(404).json({
         mensaje: "Proyecto no encontrado"
       });
     }
+
+    // Verificar si el usuario es el dueño o tiene rol admin/mod
+    const isOwner = project.user_id.toString() === req.user._id.toString();
+    const isAdminOrMod = ['admin', 'mod'].includes(req.user.role);
+
+    if (!isOwner && !isAdminOrMod) {
+      return res.status(403).json({
+        mensaje: "No tienes permiso para eliminar este proyecto"
+      });
+    }
+
+    const deletedProject = await Project.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
       mensaje: "Proyecto eliminado correctamente"
@@ -182,16 +195,8 @@ router.delete("/:id", async (req, res) => {
 /* ==========================================
    REMIX / CLONAR PROYECTO
 ========================================== */
-router.post("/remix/:id", async (req, res) => {
+router.post("/remix/:id", verifyToken, async (req: AuthRequest, res) => {
   try {
-    const { userId } = req.body;
-    
-    if (!userId) {
-      return res.status(400).json({
-        mensaje: "Falta el campo requerido: userId"
-      });
-    }
-
     const originalProject = await Project.findById(req.params.id);
     
     if (!originalProject) {
@@ -200,9 +205,9 @@ router.post("/remix/:id", async (req, res) => {
       });
     }
 
-    // Create a copy with the new user as owner
+    // Create a copy with the authenticated user as owner
     const newProject = new Project({
-      user_id: userId,
+      user_id: req.user._id,
       name: `Remix de ${originalProject.name}`,
       data: originalProject.data,
       thumbnail: originalProject.thumbnail,
