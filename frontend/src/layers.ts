@@ -39,20 +39,24 @@ export class LayerManager {
     canvas.style.left = '0';
 
     // Set canvas size to match container
-    if (!this.container) {
-      console.error("Error crítico: El contenedor de capas no existe en el DOM.");
-      return null;
+    if (!this.container || typeof this.container.offsetWidth === 'undefined') {
+      console.error("Error crítico: El contenedor de capas no es válido o no tiene dimensiones.", this.container);
+      // Usar dimensiones por defecto si falla el contenedor
+      const width = 800;
+      const height = 600;
+      canvas.width = width;
+      canvas.height = height;
+    } else {
+      const width = this.container.offsetWidth || 800;
+      const height = this.container.offsetHeight || 600;
+      
+      if (width === 0 || height === 0) {
+        console.warn("Advertencia: El contenedor tiene dimensiones 0. Usando valores por defecto.");
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
     }
-
-    const width = this.container.offsetWidth || 800;
-    const height = this.container.offsetHeight || 600;
-    
-    if (width === 0 || height === 0) {
-      console.warn("Advertencia: El contenedor tiene dimensiones 0. Usando valores por defecto.");
-    }
-    
-    canvas.width = width;
-    canvas.height = height;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) {
