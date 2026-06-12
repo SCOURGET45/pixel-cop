@@ -1,6 +1,7 @@
 // Drawing tools for canvas-based painting
 
 export type ToolType = 'brush' | 'eraser' | 'fill' | 'picker' | 'selection';
+export type BrushType = 'round' | 'square' | 'spray' | 'pencil' | 'marker';
 
 export interface SelectionBuffer {
   imageData: ImageData;
@@ -14,6 +15,7 @@ export class DrawingTools {
   private currentTool: ToolType = 'brush';
   private currentColor: string = '#000000';
   private brushSize: number = 5;
+  private brushType: BrushType = 'round';
   private isDrawing: boolean = false;
   private lastX: number = 0;
   private lastY: number = 0;
@@ -46,6 +48,14 @@ export class DrawingTools {
 
   getBrushSize(): number {
     return this.brushSize;
+  }
+
+  setBrushType(type: BrushType): void {
+    this.brushType = type;
+  }
+
+  getBrushType(): BrushType {
+    return this.brushType;
   }
 
   // Selection tool methods
@@ -199,19 +209,62 @@ export class DrawingTools {
   }
 
   private drawDot(x: number, y: number, ctx: CanvasRenderingContext2D): void {
-    ctx.beginPath();
-    ctx.arc(x, y, this.brushSize / 2, 0, Math.PI * 2);
+    const halfSize = this.brushSize / 2;
     
     if (this.currentTool === 'eraser') {
-      // Eraser: paint with transparent color (effectively removing pixels)
       ctx.globalCompositeOperation = 'destination-out';
-      ctx.fillStyle = 'rgba(0, 0, 0, 1)';
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.fillStyle = this.currentColor;
     }
     
-    ctx.fill();
+    // Different brush types
+    switch (this.brushType) {
+      case 'square':
+        ctx.beginPath();
+        ctx.rect(x - halfSize, y - halfSize, this.brushSize, this.brushSize);
+        ctx.fill();
+        break;
+      
+      case 'spray':
+        // Spray effect with random dots
+        const sprayRadius = this.brushSize * 2;
+        const density = this.brushSize * 2;
+        for (let i = 0; i < density; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = Math.random() * sprayRadius;
+          const sx = x + Math.cos(angle) * radius;
+          const sy = y + Math.sin(angle) * radius;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      
+      case 'pencil':
+        // Pencil is like a small hard round brush
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(1, this.brushSize / 3), 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      
+      case 'marker':
+        // Marker has slight transparency and larger coverage
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.arc(x, y, this.brushSize * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+        break;
+      
+      case 'round':
+      default:
+        ctx.beginPath();
+        ctx.arc(x, y, halfSize, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+    }
+    
     ctx.closePath();
     ctx.globalCompositeOperation = 'source-over';
   }
@@ -222,18 +275,53 @@ export class DrawingTools {
     ctx.lineTo(x1, y1);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.lineWidth = this.brushSize;
-
+    
     if (this.currentTool === 'eraser') {
-      // Eraser: paint with transparent color (effectively removing pixels)
       ctx.globalCompositeOperation = 'destination-out';
-      ctx.strokeStyle = 'rgba(0, 0, 0, 1)';
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = this.currentColor;
     }
-
-    ctx.stroke();
+    
+    // Different brush types affect line drawing
+    switch (this.brushType) {
+      case 'square':
+        ctx.lineCap = 'square';
+        ctx.lineWidth = this.brushSize;
+        ctx.stroke();
+        break;
+      
+      case 'pencil':
+        ctx.lineWidth = Math.max(1, this.brushSize / 2);
+        ctx.stroke();
+        break;
+      
+      case 'marker':
+        ctx.globalAlpha = 0.7;
+        ctx.lineWidth = this.brushSize * 0.8;
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+        break;
+      
+      case 'spray':
+        // For spray, use dot-based approach along the line
+        const dist = Math.sqrt(Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2));
+        const steps = Math.max(1, Math.floor(dist / 2));
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps;
+          const px = x0 + t * (x1 - x0);
+          const py = y0 + t * (y1 - y0);
+          this.drawDot(px, py, ctx);
+        }
+        break;
+      
+      case 'round':
+      default:
+        ctx.lineWidth = this.brushSize;
+        ctx.stroke();
+        break;
+    }
+    
     ctx.closePath();
     ctx.globalCompositeOperation = 'source-over';
   }

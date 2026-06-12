@@ -451,6 +451,17 @@ function setupToolbar(): void {
       
       const tool = (btn as HTMLElement).dataset.tool as ToolType;
       drawingTools!.setTool(tool);
+      
+      // Toggle brush options visibility based on selected tool
+      const brushOptions = document.getElementById('brushOptions');
+      if (brushOptions) {
+        // Show brush options only when brush or eraser is selected
+        if (tool === 'brush' || tool === 'eraser') {
+          brushOptions.style.display = 'flex';
+        } else {
+          brushOptions.style.display = 'none';
+        }
+      }
     });
   });
   
@@ -462,6 +473,12 @@ function setupToolbar(): void {
     const size = parseInt(brushSizeInput.value, 10);
     brushSizeValue.textContent = `${size}px`;
     drawingTools!.setBrushSize(size);
+  });
+  
+  // Brush type selector
+  const brushTypeSelect = document.getElementById('brushType') as HTMLSelectElement;
+  brushTypeSelect.addEventListener('change', () => {
+    drawingTools!.setBrushType(brushTypeSelect.value as 'round' | 'square' | 'spray' | 'pencil' | 'marker');
   });
   
   // Color picker
@@ -839,6 +856,67 @@ function setupMenuActions(): void {
     btnZoomReset.addEventListener('click', () => {
       resetZoom();
     });
+  }
+  
+  // Canvas Resize button
+  const btnResizeCanvas = document.getElementById('btnResizeCanvas');
+  if (btnResizeCanvas) {
+    btnResizeCanvas.addEventListener('click', () => {
+      if (!layerManager) return;
+      
+      const activeLayer = layerManager.getActiveLayer();
+      if (!activeLayer) return;
+      
+      const currentWidth = activeLayer.canvas.width;
+      const currentHeight = activeLayer.canvas.height;
+      
+      const newWidth = prompt('Nuevo ancho del lienzo (píxeles):', currentWidth.toString());
+      if (newWidth === null) return;
+      
+      const newHeight = prompt('Nuevo alto del lienzo (píxeles):', currentHeight.toString());
+      if (newHeight === null) return;
+      
+      const width = parseInt(newWidth, 10);
+      const height = parseInt(newHeight, 10);
+      
+      if (isNaN(width) || isNaN(height) || width <= 0 || height <= 0) {
+        alert('Por favor ingresa valores válidos.');
+        return;
+      }
+      
+      // Save state before resize
+      saveState();
+      
+      // Resize all layers
+      const container = document.getElementById('canvas-container');
+      if (container) {
+        container.style.width = `${width}px`;
+        container.style.height = `${height}px`;
+      }
+      
+      // Resize each layer
+      layerManager.resizeAllLayers(width, height);
+      
+      markCanvasChanged();
+      alert(`Lienzo redimensionado a ${width}x${height}px`);
+    });
+  }
+  
+  // Theme Toggle button
+  const btnToggleTheme = document.getElementById('btnToggleTheme');
+  if (btnToggleTheme) {
+    btnToggleTheme.addEventListener('click', () => {
+      document.body.classList.toggle('dark-theme');
+      // Save theme preference to localStorage
+      const isDark = document.body.classList.contains('dark-theme');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+    
+    // Load saved theme preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.body.classList.add('dark-theme');
+    }
   }
   
   // Tool button handler for showing/hiding selection options

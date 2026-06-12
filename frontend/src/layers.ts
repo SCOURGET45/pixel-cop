@@ -219,4 +219,51 @@ export class LayerManager {
       this.layersList.appendChild(layerItem);
     });
   }
+
+  resizeAllLayers(width: number, height: number): void {
+    // Save content of each layer before resizing
+    const layerData: {id: string; imageData: ImageData}[] = [];
+    
+    this.layers.forEach(layer => {
+      // Save current image data
+      const imageData = layer.ctx.getImageData(0, 0, layer.canvas.width, layer.canvas.height);
+      layerData.push({id: layer.id, imageData});
+    });
+    
+    // Resize each layer
+    this.layers.forEach(layer => {
+      const oldWidth = layer.canvas.width;
+      const oldHeight = layer.canvas.height;
+      layer.canvas.width = width;
+      layer.canvas.height = height;
+      
+      // Get saved data for this layer
+      const savedData = layerData.find(d => d.id === layer.id)!.imageData;
+      
+      // Restore the saved image data (cropped or expanded as needed)
+      if (width >= oldWidth && height >= oldHeight) {
+        // Canvas is larger - just put the data
+        layer.ctx.putImageData(savedData, 0, 0);
+      } else {
+        // If canvas is smaller, we need to crop
+        const croppedData = layer.ctx.createImageData(
+          Math.min(width, savedData.width),
+          Math.min(height, savedData.height)
+        );
+        
+        // Copy overlapping pixels
+        for (let y = 0; y < croppedData.height; y++) {
+          for (let x = 0; x < croppedData.width; x++) {
+            const srcIdx = (y * savedData.width + x) * 4;
+            const dstIdx = (y * croppedData.width + x) * 4;
+            croppedData.data[dstIdx] = savedData.data[srcIdx];
+            croppedData.data[dstIdx + 1] = savedData.data[srcIdx + 1];
+            croppedData.data[dstIdx + 2] = savedData.data[srcIdx + 2];
+            croppedData.data[dstIdx + 3] = savedData.data[srcIdx + 3];
+          }
+        }
+        layer.ctx.putImageData(croppedData, 0, 0);
+      }
+    });
+  }
 }

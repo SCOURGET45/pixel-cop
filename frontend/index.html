@@ -75,10 +75,41 @@
             <button id="btnCancelSelection" title="Cancelar selección">❌ Cancelar</button>
           </div>
           
-          <div class="tool-options">
+          <!-- Brush Options (collapsed by default, expands when brush is selected) -->
+          <div class="tool-options brush-options" id="brushOptions">
+            <label>🖌️ Pincel</label>
+            <select id="brushType" title="Tipo de pincel">
+              <option value="round">Redondo</option>
+              <option value="square">Cuadrado</option>
+              <option value="spray">Spray</option>
+              <option value="pencil">Lápiz</option>
+              <option value="marker">Marcador</option>
+            </select>
             <label>Tamaño:</label>
             <input type="range" id="brushSize" min="1" max="50" value="5" />
             <span id="brushSizeValue">5px</span>
+            
+            <!-- Color Picker inside Brush Options -->
+            <details class="color-details">
+              <summary>🎨 Color</summary>
+              <div class="color-content">
+                <input type="color" id="colorPicker" value="#000000" />
+                <div class="color-presets">
+                  <span class="preset-color" data-color="#000000"></span>
+                  <span class="preset-color" data-color="#ffffff"></span>
+                  <span class="preset-color" data-color="#ff0000"></span>
+                  <span class="preset-color" data-color="#00ff00"></span>
+                  <span class="preset-color" data-color="#0000ff"></span>
+                  <span class="preset-color" data-color="#ffff00"></span>
+                  <span class="preset-color" data-color="#ff00ff"></span>
+                  <span class="preset-color" data-color="#00ffff"></span>
+                  <span class="preset-color" data-color="#808080"></span>
+                  <span class="preset-color" data-color="#800000"></span>
+                  <span class="preset-color" data-color="#808000"></span>
+                  <span class="preset-color" data-color="#008000"></span>
+                </div>
+              </div>
+            </details>
           </div>
           
           <!-- Undo/Redo Controls -->
@@ -97,19 +128,15 @@
             <button id="btnZoomReset" title="Resetear zoom">🔄</button>
           </div>
           
-          <div class="color-picker">
-            <label>Color:</label>
-            <input type="color" id="colorPicker" value="#000000" />
-            <div class="color-presets">
-              <span class="preset-color" data-color="#000000"></span>
-              <span class="preset-color" data-color="#ffffff"></span>
-              <span class="preset-color" data-color="#ff0000"></span>
-              <span class="preset-color" data-color="#00ff00"></span>
-              <span class="preset-color" data-color="#0000ff"></span>
-              <span class="preset-color" data-color="#ffff00"></span>
-              <span class="preset-color" data-color="#ff00ff"></span>
-              <span class="preset-color" data-color="#00ffff"></span>
-            </div>
+          <!-- Canvas Resize Options -->
+          <div class="tool-options">
+            <label>📐 Lienzo</label>
+            <button id="btnResizeCanvas" title="Cambiar tamaño del lienzo">✂️ Redimensionar</button>
+          </div>
+          
+          <!-- Theme Toggle -->
+          <div class="tool-options">
+            <button id="btnToggleTheme" title="Cambiar tema claro/oscuro">🌓 Tema</button>
           </div>
         </aside>
 
