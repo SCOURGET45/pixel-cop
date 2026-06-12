@@ -150,24 +150,27 @@ function createProjectCard(project: Project): HTMLElement {
   remixBtn.textContent = '🎨 Remix';
   remixBtn.onclick = async (e) => {
     e.stopPropagation(); // Prevent card click
-    
-    const token = localStorage.getItem('token');
-    if (!token) {
+
+    // Check if user is logged in using currentUser instead of token
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) {
       alert('Debes iniciar sesión para hacer un remix.');
       return;
     }
-    
+
+    const user = JSON.parse(currentUser);
+
     try {
       const response = await fetch(`${API_URL}/remix/${project._id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${user._id || user.id || user.Usuario}`
         }
       });
-      
+
       const result = await response.json();
-      
+
       if (response.ok) {
         alert(`✅ ${result.mensaje}\nRedirigiendo a tu perfil...`);
         window.location.href = '/perfil.html';
