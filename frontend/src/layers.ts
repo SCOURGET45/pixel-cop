@@ -39,6 +39,11 @@ export class LayerManager {
     canvas.style.left = '0';
 
     // Set canvas size to match container
+    if (!this.container) {
+      console.error("Error crítico: El contenedor de capas no existe en el DOM.");
+      return null;
+    }
+
     const width = this.container.offsetWidth || 800;
     const height = this.container.offsetHeight || 600;
     
