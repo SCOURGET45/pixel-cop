@@ -31,9 +31,23 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
-// Aumentamos el límite para permitir imágenes base64 grandes (hasta 100MB)
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+
+// Manejador de errores personalizado para body-parser ANTES de las rutas
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err.type === 'entity.too.large' || err.message?.includes('too large')) {
+    console.warn('⚠️ Payload demasiado grande:', err);
+    return res.status(413).json({ 
+      error: 'La imagen es demasiado grande', 
+      message: 'Intenta reducir el tamaño del lienzo o usar menos capas',
+      suggestion: 'Usa la herramienta "Redimensionar lienzo" para disminuir las dimensiones'
+    });
+  }
+  next(err);
+});
+
+// Aumentamos el límite para permitir imágenes base64 grandes (hasta 200MB)
+app.use(express.json({ limit: '200mb' }));
+app.use(express.urlencoded({ extended: true, limit: '200mb' }));
 
 // Manejo de errores global para asegurar respuestas JSON
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

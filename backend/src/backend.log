@@ -1,43 +1,14 @@
 
-> backend@1.0.0 dev
-> nodemon --exec ts-node index.ts
+  #  node[5598]: std::unique_ptr<long unsigned int> node::WorkerThreadsTaskRunner::DelayedTaskScheduler::Start() at ../src/node_platform.cc:68
+  #  Assertion failed: (0) == (uv_thread_create(t.get(), start_thread, this))
 
-[33m[nodemon] 3.1.14[39m
-[33m[nodemon] to restart at any time, enter `rs`[39m
-[33m[nodemon] watching path(s): *.*[39m
-[33m[nodemon] watching extensions: ts,json[39m
-[32m[nodemon] starting `ts-node index.ts`[39m
-◇ injected env (2) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
-Servidor activo en puerto 3000
-Error al conectar MongoDB: MongooseServerSelectionError: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017
-    at _handleConnectionErrors (/workspace/backend/src/node_modules/mongoose/lib/connection.js:1180:11)
-    at NativeConnection.openUri (/workspace/backend/src/node_modules/mongoose/lib/connection.js:1111:11) {
-  errorLabelSet: Set(0) {},
-  reason: TopologyDescription {
-    type: 'Unknown',
-    servers: Map(1) { 'localhost:27017' => [ServerDescription] },
-    stale: false,
-    compatible: true,
-    heartbeatFrequencyMS: 10000,
-    localThresholdMS: 15,
-    setName: null,
-    maxElectionId: null,
-    maxSetVersion: null,
-    commonWireVersion: 0,
-    logicalSessionTimeoutMinutes: null
-  },
-  code: undefined,
-  cause: TopologyDescription {
-    type: 'Unknown',
-    servers: Map(1) { 'localhost:27017' => [ServerDescription] },
-    stale: false,
-    compatible: true,
-    heartbeatFrequencyMS: 10000,
-    localThresholdMS: 15,
-    setName: null,
-    maxElectionId: null,
-    maxSetVersion: null,
-    commonWireVersion: 0,
-    logicalSessionTimeoutMinutes: null
-  }
-}
+----- Native stack trace -----
+
+ 1: 0xcb2ef7 node::Assert(node::AssertionInfo const&) [node]
+ 2: 0xd33b3e node::WorkerThreadsTaskRunner::WorkerThreadsTaskRunner(int) [node]
+ 3: 0xd33c1c node::NodePlatform::NodePlatform(int, v8::TracingController*, v8::PageAllocator*) [node]
+ 4: 0xc64b8c  [node]
+ 5: 0xc660f4 node::Start(int, char**) [node]
+ 6: 0x7f2f8d3dc24a  [/lib/x86_64-linux-gnu/libc.so.6]
+ 7: 0x7f2f8d3dc305 __libc_start_main [/lib/x86_64-linux-gnu/libc.so.6]
+ 8: 0xbb614e _start [node]

@@ -85,6 +85,20 @@ router.post("/", async (req, res) => {
       });
     }
 
+    // Validar tamaño de datos antes de guardar en MongoDB
+    const dataSize = Buffer.byteLength(JSON.stringify(data), 'utf8');
+    const maxSize = 50 * 1024 * 1024; // 50MB máximo para MongoDB
+    
+    if (dataSize > maxSize) {
+      return res.status(413).json({
+        error: 'La imagen es demasiado grande para guardar',
+        message: 'El proyecto excede el límite de 50MB',
+        suggestion: 'Usa la herramienta "Redimensionar lienzo" para disminuir las dimensiones o elimina capas innecesarias',
+        currentSize: `${(dataSize / (1024 * 1024)).toFixed(2)} MB`,
+        maxSize: '50 MB'
+      });
+    }
+
     const newProject = new Project({
       user_id,
       name,
@@ -102,6 +116,15 @@ router.post("/", async (req, res) => {
 
   } catch (error) {
     const err = error as Error;
+    
+    // Manejar errores específicos de MongoDB por tamaño
+    if (err.message?.includes('document too large') || err.message?.includes('BSONObj size')) {
+      return res.status(413).json({
+        error: 'El proyecto es demasiado grande para MongoDB',
+        message: 'MongoDB tiene un límite de 16MB por documento',
+        suggestion: 'Reduce el tamaño del lienzo o guarda el proyecto localmente'
+      });
+    }
 
     res.status(500).json({
       mensaje: "Error al guardar el proyecto",
