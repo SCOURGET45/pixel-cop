@@ -2,6 +2,7 @@ import './style.css'
 import { authService } from './auth'
 import { LayerManager } from './layers'
 import { DrawingTools, ToolType } from './tools'
+import { PixelCop } from './pixel-cop'
 
 // Canvas dimensions
 const CANVAS_WIDTH = 800;
@@ -13,10 +14,12 @@ const AUTO_SAVE_INTERVAL = 30000;
 // App state
 let layerManager: LayerManager | null = null;
 let drawingTools: DrawingTools | null = null;
+let pixelCop: PixelCop | null = null;
 let isAppInitialized = false;
 let hayCambiosSinGuardar = false;
 let autoSaveTimer: number | null = null;
 let currentProjectId: string | null = null;
+let originalImageData: string | null = null; // Para Pixel-Cop
 
 // Global app object for navigation
 declare global {
@@ -115,6 +118,12 @@ function initializeApp(): void {
   
   // Create initial canvas and layer
   createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+  
+  // Initialize Pixel-Cop after canvas is created
+  const activeLayer = layerManager.getActiveLayer();
+  if (activeLayer) {
+    pixelCop = new PixelCop(activeLayer.canvas);
+  }
   
   // Setup toolbar
   setupToolbar();
@@ -447,6 +456,16 @@ function setupMenuActions(): void {
       const result = await response.json();
       
       if (response.ok) {
+        currentProjectId = result.project?._id || result.project?.id;
+        // Guardar la imagen original para Pixel-Cop
+        originalImageData = imageData;
+        hayCambiosSinGuardar = false;
+        
+        // Inicializar Pixel-Cop con la imagen guardada
+        if (pixelCop) {
+          pixelCop.setOriginalImageFromBase64(imageData);
+        }
+        
         alert(`✅ ${result.mensaje}\n${isPublic ? '¡Tu proyecto ahora es visible en la galería de la comunidad!' : 'Proyecto guardado privadamente.'}`);
       } else {
         alert(`❌ Error: ${result.mensaje || 'Error al guardar el proyecto'}`);
@@ -518,6 +537,28 @@ function setupMenuActions(): void {
   comunidadLink.textContent = '🌐 Ver Comunidad';
   comunidadLink.style.cssText = 'margin-left: 10px; padding: 5px 10px; background: #667eea; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;';
   menuGroup.appendChild(comunidadLink);
+  
+  // Pixel-Cop: Botón de verificación de integridad
+  const btnVerifyIntegrity = document.getElementById('btnVerifyIntegrity');
+  if (btnVerifyIntegrity) {
+    btnVerifyIntegrity.addEventListener('click', async () => {
+      if (!pixelCop || !layerManager) {
+        alert('Pixel-Cop no está inicializado.');
+        return;
+      }
+      
+      // Verificar integridad
+      const report = pixelCop.verifyIntegrity();
+      
+      if (report.differentPixels === 0) {
+        alert(`🛡️ Pixel-Cop: ¡Integridad verificada! ${report.integrityPercentage}% de integridad.\nNo se detectaron modificaciones.`);
+      } else {
+        alert(`🛡️ Pixel-Cop: Se detectaron ${report.differentPixels} píxeles modificados.\nIntegridad: ${report.integrityPercentage}%\n\nResaltando píxeles modificados en rojo...`);
+        // Resaltar diferencias
+        await pixelCop.highlightDifferences('rgba(255, 0, 0, 0.5)', 3000);
+      }
+    });
+  }
   
   // Export
   document.getElementById('btnExport')!.addEventListener('click', () => {
