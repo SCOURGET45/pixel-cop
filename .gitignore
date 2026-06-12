@@ -1,18 +1,30 @@
 ```gitignore
-# Dependencies
-node_modules/
-
-# Build outputs
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
 dist/
 build/
 target/
 
-# Logs and temporary files
+# Dependencies
+.venv/
+venv/
+node_modules/
+.mypy_cache/
+.pytest_cache/
+.gradle/
+julia-*/
+zig*/
+
+# Logs and temp files
 *.log
 *.tmp
 *.swp
+*.swo
 
-# Environment variables
+# Environment
 .env
 .env.local
 *.env.*
@@ -21,60 +33,16 @@ target/
 .vscode/
 .idea/
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-.git/
-.mypy_cache/
-.pytest_cache/
-.hypothesis/
-
-# Node.js
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-node_modules/
-dist/
-build/
-*.min.js
-*.min.css
-
-# Compiled and binary files
-*.exe
-*.dll
-*.so
-*.a
-*.o
-*.obj
-*.out
-*.class
-
-# OS generated files
+# System files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# Archives
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Compressed files
 *.zip
 *.gz
 *.tar
@@ -97,182 +65,4 @@ Thumbs.db
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# Gradle
-.gradle/
-build/
-
-# Go
-*.o
-*.a
-*.so
-*.exe
-*.dll
-*.dylib
-*.test
-*.prof
-vendor/
-bin/
-
-# Java
-*.class
-*.jar
-*.war
-*.ear
-*.nar
-*.hprof
-hs_err_pid*.log
-replay_*.log
-.DS_Store
-*.swp
-*.swo
-*~
-.nb-gradle/
-.nbproject/
-nbproject/
-nbbuild/
-nbdist/
-.nbmake/
-nbexec/
-nbexec-*
-nbexec-*.bat
-nbexec-*.sh
-nbexec-*.cmd
-nbexec-*.ps1
-nbexec-*.pl
-nbexec-*.rb
-nbexec-*.py
-nbexec-*.js
-nbexec-*.ts
-nbexec-*.coffee
-nbexec-*.php
-nbexec-*.lua
-nbexec-*.sql
-nbexec-*.sh
-nbexec-*.bash
-nbexec-*.zsh
-nbexec-*.fish
-nbexec-*.csh
-nbexec-*.tcsh
-nbexec-*.ksh
-nbexec-*.ash
-nbexec-*.dash
-nbexec-*.mksh
-nbexec-*.posh
-nbexec-*.pwsh
-nbexec-*.psd1
-nbexec-*.psm1
-nbexec-*.psc1
-nbexec-*.pssc
-nbexec-*.psrc
-nbexec-*.ps1xml
-nbexec-*.clixml
-nbexec-*.shxml
-nbexec-*.bat
-nbexec-*.cmd
-nbexec-*.ps1
-nbexec-*.psm1
-nbexec-*.psd1
-nbexec-*.psc1
-nbexec-*.pssc
-nbexec-*.psrc
-nbexec-*.ps1xml
-nbexec-*.clixml
-nbexec-*.shxml
-nbexec-*.reg
-nbexec-*.inf
-nbexec-*.msi
-nbexec-*.msp
-nbexec-*.mst
-nbexec-*.msm
-nbexec-*.pcp
-nbexec-*.ppkg
-nbexec-*.appx
-nbexec-*.msix
-nbexec-*.appxbundle
-nbexec-*.msixbundle
-nbexec-*.msixupload
-nbexec-*.appinstaller
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-nbexec-*.msixupload
-nbexec-*.msixbundleupload
-......
 ```
-
-Wait, I need to reconsider this. Looking at the input again:
-
-### Added files:
-[]
-
-### Deleted files:
-[]
-
-### Modified files:
-['backend/src/index.ts', 'frontend/src/main.ts', 'frontend/src/style.css']
-
-These are all source code files (.ts, .css) and there are no build artifacts, dependencies, or temporary files in the changes. According to rule #6, if the change list contains ONLY source or config files and NO build artifacts, dependencies, or temp files, I should output an EMPTY .gitignore.
-
-(empty)
