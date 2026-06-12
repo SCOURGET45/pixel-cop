@@ -225,22 +225,35 @@ function initializeApp(): void {
   
   if (!canvasContainer) {
     console.error("Error: No se encontró el contenedor del canvas (#canvas-container)");
+    alert("Error crítico: No se pudo cargar el editor. Por favor recarga la página.");
     return;
   }
   
   if (!layersList) {
     console.error("Error: No se encontró la lista de capas (#layers-list)");
+    alert("Error crítico: No se pudo cargar el gestor de capas.");
     return;
+  }
+  
+  // Asegurar que el contenedor tenga dimensiones válidas antes de continuar
+  if (canvasContainer.offsetWidth === 0 || canvasContainer.offsetHeight === 0) {
+    console.warn("Advertencia: El contenedor del canvas tiene dimensiones 0. Intentando continuar con valores por defecto...");
   }
   
   // Initialize tools
   drawingTools = new DrawingTools();
   
-  // Initialize layer manager
-  layerManager = new LayerManager(canvasContainer, layersList);
-  
-  // Create initial canvas and layer
-  createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+  try {
+    // Initialize layer manager
+    layerManager = new LayerManager(canvasContainer, layersList);
+    
+    // Create initial canvas and layer
+    createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+  } catch (error) {
+    console.error("Error fatal al inicializar el editor:", error);
+    alert("Hubo un error al iniciar el editor. Revisa la consola para más detalles.");
+    return;
+  }
   
   // Initialize Pixel-Cop after canvas is created
   const activeLayer = layerManager.getActiveLayer();
