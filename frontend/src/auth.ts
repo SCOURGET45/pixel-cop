@@ -64,12 +64,19 @@ class AuthService {
 
   async register(userData: Omit<User, '_id'>): Promise<AuthResult> {
     try {
-      const response = await fetch(`${this.API_URL}/inicio-sesion/registro`, {
+      const response = await fetch(`${this.API_URL}/inicio-sesion/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify({
+          Nombre: userData.Nombre,
+          Usuario: userData.Usuario,
+          correo: userData.correo,
+          password: userData.password,
+          idUsuario: userData.Usuario.toLowerCase().replace(/\s/g, ''),
+          imgPerfil: ''
+        }),
       });
 
       const data = await response.json();
