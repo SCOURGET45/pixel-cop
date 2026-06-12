@@ -39,7 +39,8 @@ app.use(cors({
     'http://localhost:8080',
     'http://127.0.0.1:3000',
     'http://localhost:3000',
-    /http:\/\/192\.168\.\d+\.\d+:\d+/ // Cualquier IP en la red local
+    /http:\/\/192\.168\.\d+\.\d+:\d+/, // Cualquier IP en la red local 192.168.x.x
+    /http:\/\/10\.\d+\.\d+\.\d+:\d+/   // Cualquier IP en la red local 10.x.x.x
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
