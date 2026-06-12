@@ -21,6 +21,12 @@ export class LayerManager {
   }
 
   createLayer(name?: string): Layer {
+    // Verificar que el contenedor exista y tenga dimensiones válidas
+    if (!this.container) {
+      console.error("Error: El contenedor del canvas no está definido.");
+      throw new Error("Contenedor del canvas no encontrado");
+    }
+
     this.layerCounter++;
     const layerName = name || `Capa ${this.layerCounter}`;
     const id = `layer-${Date.now()}-${this.layerCounter}`;
@@ -35,6 +41,11 @@ export class LayerManager {
     // Set canvas size to match container
     const width = this.container.offsetWidth || 800;
     const height = this.container.offsetHeight || 600;
+    
+    if (width === 0 || height === 0) {
+      console.warn("Advertencia: El contenedor tiene dimensiones 0. Usando valores por defecto.");
+    }
+    
     canvas.width = width;
     canvas.height = height;
 
