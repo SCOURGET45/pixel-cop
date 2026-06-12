@@ -175,21 +175,18 @@ export class LayerManager {
       const visibilityBtn = document.createElement('button');
       visibilityBtn.className = 'layer-visibility';
       visibilityBtn.textContent = layer.visible ? '👁️' : '🚫';
+      visibilityBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:1rem;';
       visibilityBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.toggleLayerVisibility(layer.id);
       });
 
-      // Layer name input
-      const nameInput = document.createElement('input');
-      nameInput.className = 'layer-name';
-      nameInput.type = 'text';
-      nameInput.value = layer.name;
-      nameInput.addEventListener('click', (e) => {
-        e.stopPropagation();
-      });
-      nameInput.addEventListener('change', () => {
-        layer.name = nameInput.value;
+      // Layer name
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = layer.name;
+      nameSpan.style.cssText = 'flex:1;text-align:left;padding:0.2rem;cursor:pointer;';
+      nameSpan.addEventListener('click', () => {
+        this.setActiveLayer(layer.id);
       });
 
       // Click to select layer
@@ -198,7 +195,7 @@ export class LayerManager {
       });
 
       layerItem.appendChild(visibilityBtn);
-      layerItem.appendChild(nameInput);
+      layerItem.appendChild(nameSpan);
       this.layersList.appendChild(layerItem);
     });
   }

@@ -2,46 +2,26 @@
 # Dependencies
 node_modules/
 
-# Build artifacts
+# Build outputs
 dist/
 build/
-target/
+*.js.map
+*.tsbuildinfo
 
-# Environment variables
+# Environment
 .env
 .env.local
 *.env.*
 
-# IDE and editor files
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Logs and temporary files
+# Logs
 *.log
+
+# Temporary files
 *.tmp
-
-# Python specific
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
-
-# Virtual environments
-venv/
-.venv/
-env/
-ENV/
-
-# Coverage reports
-coverage/
-htmlcov/
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
 ```

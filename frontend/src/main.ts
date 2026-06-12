@@ -12,110 +12,87 @@ let layerManager: LayerManager | null = null;
 let drawingTools: DrawingTools | null = null;
 let isAppInitialized = false;
 
-// DOM Elements
-const authContainer = document.getElementById('auth-container')!;
-const appContainer = document.getElementById('app-container')!;
-const loginForm = document.getElementById('login-form')!;
-const registerForm = document.getElementById('register-form')!;
-const userDisplay = document.getElementById('user-display')!;
+// Global app object for navigation
+declare global {
+  interface Window {
+    app: {
+      showView: (viewName: string) => void;
+    };
+  }
+}
 
 // Initialize the application
 function init(): void {
+  setupNavigation();
   checkAuth();
-  setupAuthListeners();
+}
+
+// Setup navigation between views
+function setupNavigation(): void {
+  window.app = {
+    showView: (viewName: string) => {
+      // Hide all views
+      document.querySelectorAll('.view').forEach(view => {
+        view.classList.remove('active');
+        view.classList.add('hidden');
+      });
+      
+      // Show requested view
+      const targetView = document.getElementById(`${viewName}View`);
+      if (targetView) {
+        targetView.classList.remove('hidden');
+        targetView.classList.add('active');
+      }
+      
+      // Initialize editor if entering editor view
+      if (viewName === 'editor' && !isAppInitialized) {
+        setTimeout(() => {
+          if (!authService.isLoggedIn()) {
+            alert('Para usar el editor, primero debes iniciar sesión.');
+            showView('auth');
+          } else {
+            initializeApp();
+          }
+        }, 100);
+      }
+      
+      // Load community gallery if entering community view
+      if (viewName === 'community') {
+        loadCommunityGallery();
+      }
+    }
+  };
+  
+  // Mobile menu toggle
+  const mobileMenu = document.getElementById('mobileMenu');
+  const navLinks = document.getElementById('navLinks');
+  
+  if (mobileMenu && navLinks) {
+    mobileMenu.addEventListener('click', () => {
+      navLinks.classList.toggle('active');
+    });
+  }
 }
 
 // Check if user is logged in
 function checkAuth(): void {
-  if (authService.isLoggedIn()) {
-    showApp();
-  } else {
-    showAuth();
-  }
+  updateNavForAuth();
 }
 
-// Show authentication screens
-function showAuth(): void {
-  authContainer.classList.remove('hidden');
-  appContainer.classList.add('hidden');
-}
-
-// Show main app
-function showApp(): void {
-  authContainer.classList.add('hidden');
-  appContainer.classList.remove('hidden');
-  
+// Update navigation based on auth status
+function updateNavForAuth(): void {
+  const loginBtn = document.getElementById('loginBtn');
   const user = authService.getCurrentUser();
-  if (user) {
-    userDisplay.textContent = `Hola, ${user.Usuario}`;
-  }
   
-  if (!isAppInitialized) {
-    initializeApp();
-  }
-}
-
-// Setup authentication event listeners
-function setupAuthListeners(): void {
-  // Login form
-  const loginFormEl = document.getElementById('loginForm') as HTMLFormElement;
-  loginFormEl.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const usuario = (document.getElementById('loginUsuario') as HTMLInputElement).value;
-    const password = (document.getElementById('loginPassword') as HTMLInputElement).value;
-    
-    const result = await authService.login(usuario, password);
-    
-    if (result.success) {
-      showApp();
-    } else {
-      alert(result.message);
-    }
-  });
-
-  // Register form
-  const registerFormEl = document.getElementById('registerForm') as HTMLFormElement;
-  registerFormEl.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const userData = {
-      Nombre: (document.getElementById('regNombre') as HTMLInputElement).value,
-      Usuario: (document.getElementById('regUsuario') as HTMLInputElement).value,
-      correo: (document.getElementById('regCorreo') as HTMLInputElement).value,
-      password: (document.getElementById('regPassword') as HTMLInputElement).value,
+  if (user && loginBtn) {
+    loginBtn.textContent = `👤 ${user.Usuario}`;
+    loginBtn.onclick = () => {
+      if (confirm('¿Cerrar sesión?')) {
+        authService.logout();
+        location.reload();
+      }
     };
-    
-    const result = await authService.register(userData);
-    
-    if (result.success) {
-      alert(result.message);
-      // Switch to login form
-      loginForm.classList.remove('hidden');
-      registerForm.classList.add('hidden');
-    } else {
-      alert(result.message);
-    }
-  });
-
-  // Toggle between login and register
-  document.getElementById('showRegister')!.addEventListener('click', (e) => {
-    e.preventDefault();
-    loginForm.classList.add('hidden');
-    registerForm.classList.remove('hidden');
-  });
-
-  document.getElementById('showLogin')!.addEventListener('click', (e) => {
-    e.preventDefault();
-    registerForm.classList.add('hidden');
-    loginForm.classList.remove('hidden');
-  });
-
-  // Logout
-  document.getElementById('btnLogout')!.addEventListener('click', () => {
-    authService.logout();
-    showAuth();
-  });
+  }
 }
 
 // Initialize the main application
@@ -126,9 +103,9 @@ function initializeApp(): void {
   drawingTools = new DrawingTools();
   
   // Initialize layer manager
-  const canvasContainer = document.getElementById('canvas-container')!;
-  const layersList = document.getElementById('layers-list')!;
-  layerManager = new LayerManager(canvasContainer, layersList);
+  const canvasWrapper = document.getElementById('canvasWrapper')!;
+  const layersList = document.getElementById('layersList')!;
+  layerManager = new LayerManager(canvasWrapper, layersList);
   
   // Create initial canvas and layer
   createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
