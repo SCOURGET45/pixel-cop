@@ -802,6 +802,14 @@ function setupMenuActions(): void {
       const isPublic = confirm('¿Quieres compartir este proyecto públicamente en la galería de la comunidad?');
       
       // Send to backend
+      console.log('Enviando proyecto al backend...', {
+        user_id: userId,
+        name: projectName,
+        dataLength: imageData.length,
+        thumbnailLength: thumbnailData ? thumbnailData.length : 0,
+        is_public: isPublic
+      });
+      
       const response = await fetch('http://localhost:3000/api/projects', {
         method: 'POST',
         headers: {
@@ -816,7 +824,18 @@ function setupMenuActions(): void {
         })
       });
       
-      const result = await response.json();
+      console.log('Respuesta del servidor:', response.status, response.statusText);
+      
+      // Manejar respuesta no JSON (como HTML de error)
+      const contentType = response.headers.get('content-type');
+      let result;
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        console.error('Respuesta no JSON recibida:', text.substring(0, 500));
+        throw new Error(`El servidor respondió con ${response.status} ${response.statusText}. La imagen es demasiado grande o hay un problema de configuración.`);
+      }
       
       if (response.ok) {
         currentProjectId = result.project?._id || result.project?.id;
